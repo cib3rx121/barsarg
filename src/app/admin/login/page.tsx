@@ -37,29 +37,42 @@ export default async function AdminLoginPage({ searchParams }: LoginPageProps) {
   }
 
   return (
-    <div className="flex min-h-screen items-center justify-center bg-[#f2efe2] px-4 dark:bg-[#1a2119]">
-      <main className="w-full max-w-md rounded-2xl border border-[#7f8a6a] bg-[#fcfbf6] p-8 shadow-sm dark:border-[#647157] dark:bg-[#202a20]">
-        <p className="text-xs font-semibold uppercase tracking-[0.2em] text-[#6f7d5a] dark:text-[#b7c29d]">
-          Posto de Comando
+    <div className="relative flex min-h-screen items-center justify-center overflow-hidden bg-gradient-to-br from-slate-50 via-emerald-50/40 to-slate-100 px-4 dark:from-slate-950 dark:via-emerald-950/30 dark:to-slate-900">
+      <div
+        className="pointer-events-none absolute inset-0 opacity-40 dark:opacity-25"
+        aria-hidden
+        style={{
+          backgroundImage:
+            "radial-gradient(circle at 20% 20%, rgba(16,185,129,0.15), transparent 45%), radial-gradient(circle at 80% 80%, rgba(59,130,246,0.12), transparent 40%)",
+        }}
+      />
+      <main className="admin-shell relative w-full max-w-md rounded-3xl border border-slate-200/80 bg-white/90 p-8 shadow-2xl shadow-slate-300/40 backdrop-blur-xl dark:border-slate-700/80 dark:bg-slate-900/90 dark:shadow-black/50">
+        <p className="text-[0.65rem] font-semibold uppercase tracking-[0.28em] text-emerald-700 dark:text-emerald-400">
+          Bar de Sargentos
         </p>
-        <h1 className="mt-2 text-xl font-bold text-[#2f3a2d] dark:text-[#e8e3d3]">
-          Entrada do graduado
+        <h1 className="mt-3 text-2xl font-semibold tracking-tight text-slate-900 dark:text-white">
+          Área de administração
         </h1>
-        <p className="mt-2 text-sm text-[#4a5644] dark:text-[#c5cfb2]">
-          Mete as credenciais do comando e siga para a missao.
+        <p className="mt-2 text-sm leading-relaxed text-slate-600 dark:text-slate-400">
+          Introduza as credenciais configuradas no ambiente de alojamento para aceder ao
+          painel de gestão de cotas.
         </p>
 
         {hasError ? (
-          <p className="mt-4 rounded-md bg-red-100 p-3 text-sm text-red-800 dark:bg-red-950/30 dark:text-red-300">
-            Credenciais erradas, meu sargento. Volta a tentar.
+          <p
+            className="mt-5 rounded-xl border border-red-200/80 bg-red-50/90 px-4 py-3 text-sm text-red-800 dark:border-red-900/50 dark:bg-red-950/40 dark:text-red-200"
+            role="alert"
+          >
+            Não foi possível validar as credenciais. Confirme o utilizador e a
+            palavra-passe e tente novamente.
           </p>
         ) : null}
 
-        <form action={login} className="mt-6 space-y-4">
+        <form action={login} className="mt-8 space-y-5">
           <div>
             <label
               htmlFor="username"
-              className="mb-1 block text-sm font-medium text-[#3f4a3a] dark:text-[#c5cfb2]"
+              className="mb-1.5 block text-sm font-medium text-slate-700 dark:text-slate-300"
             >
               Utilizador
             </label>
@@ -68,14 +81,15 @@ export default async function AdminLoginPage({ searchParams }: LoginPageProps) {
               name="username"
               type="text"
               required
-              className="w-full rounded-lg border border-[#8b9678] bg-white px-3 py-2 text-sm text-[#232b21] outline-none ring-[#5b6a4a] transition focus:ring-2 dark:border-[#6b775d] dark:bg-[#1b241b] dark:text-[#e8e3d3]"
+              autoComplete="username"
+              className="w-full rounded-xl border border-slate-200 bg-white px-4 py-3 text-sm text-slate-900 shadow-sm transition duration-200 focus:border-emerald-500/60 focus:outline-none focus:ring-2 focus:ring-emerald-500/25 dark:border-slate-600 dark:bg-slate-950/50 dark:text-slate-100"
             />
           </div>
 
           <div>
             <label
               htmlFor="password"
-              className="mb-1 block text-sm font-medium text-[#3f4a3a] dark:text-[#c5cfb2]"
+              className="mb-1.5 block text-sm font-medium text-slate-700 dark:text-slate-300"
             >
               Palavra-passe
             </label>
@@ -84,15 +98,16 @@ export default async function AdminLoginPage({ searchParams }: LoginPageProps) {
               name="password"
               type="password"
               required
-              className="w-full rounded-lg border border-[#8b9678] bg-white px-3 py-2 text-sm text-[#232b21] outline-none ring-[#5b6a4a] transition focus:ring-2 dark:border-[#6b775d] dark:bg-[#1b241b] dark:text-[#e8e3d3]"
+              autoComplete="current-password"
+              className="w-full rounded-xl border border-slate-200 bg-white px-4 py-3 text-sm text-slate-900 shadow-sm transition duration-200 focus:border-emerald-500/60 focus:outline-none focus:ring-2 focus:ring-emerald-500/25 dark:border-slate-600 dark:bg-slate-950/50 dark:text-slate-100"
             />
           </div>
 
           <button
             type="submit"
-            className="w-full rounded-lg bg-[#2f3b2f] px-4 py-2.5 text-sm font-semibold text-[#f6f3e7] transition hover:bg-[#3b4a39] dark:bg-[#b7c29d] dark:text-[#1e251d] dark:hover:bg-[#cad3b3]"
+            className="w-full rounded-xl bg-emerald-600 px-4 py-3 text-sm font-semibold text-white shadow-lg shadow-emerald-600/25 transition duration-200 hover:bg-emerald-500 focus:outline-none focus:ring-2 focus:ring-emerald-500/40 active:scale-[0.99] dark:bg-emerald-600 dark:hover:bg-emerald-500"
           >
-            Entrar em servico
+            Entrar
           </button>
         </form>
       </main>

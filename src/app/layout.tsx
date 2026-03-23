@@ -14,7 +14,7 @@ const geistMono = Geist_Mono({
 
 export const metadata: Metadata = {
   title: "Bar de Sargentos",
-  description: "Gestao de cotas do Bar de Sargentos da Academia Militar",
+  description: "Gestão de cotas do Bar de Sargentos da Academia Militar",
 };
 
 export default function RootLayout({

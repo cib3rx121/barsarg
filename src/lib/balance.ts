@@ -6,7 +6,7 @@ import {
 import { prisma } from "@/lib/prisma";
 import { getGlobalQuotaCents } from "@/lib/quota";
 
-/** Primeiro mes em que a cota se aplica (entrada ou data escolhida pelo admin). */
+/** Primeiro mês em que a cota se aplica (entrada ou data definida pelo administrador). */
 export function firstChargeMonthKey(user: {
   entryDate: Date;
   chargeStartDate: Date | null;
@@ -14,10 +14,10 @@ export function firstChargeMonthKey(user: {
   return monthKeyFromUtcDate(user.chargeStartDate ?? user.entryDate);
 }
 
-/** Positivo = deve ao bar; negativo = credito. */
+/** Positivo = deve ao bar; negativo = crédito. */
 export type BalanceSummary = {
   balanceCents: number;
-  /** Com base na cota actual; 0 se saldo <= 0 ou cota nao definida. */
+  /** Com base na cota atual; 0 se saldo <= 0 ou cota não definida. */
   estimatedMonthsEquivalent: number;
   quotaNotConfigured: boolean;
 };
@@ -118,7 +118,7 @@ export async function computeBalanceDetailForUser(userId: string) {
   };
 }
 
-/** Alinha cargas mensais com inicio de cobranca, meses isentos e mes actual. */
+/** Alinha cargas mensais com início de cobrança, meses isentos e mês atual. */
 export async function reconcileUserCharges(userId: string): Promise<void> {
   const quota = await getGlobalQuotaCents();
   if (quota === null || quota <= 0) return;
@@ -184,7 +184,7 @@ export async function reconcileAllUsersCharges(): Promise<void> {
   }
 }
 
-/** Mantem o nome antigo: agora faz reconciliacao completa por utilizador. */
+/** Mantém o nome antigo: agora faz reconciliação completa por utilizador. */
 export async function backfillMissingMonthlyCharges(): Promise<void> {
   await reconcileAllUsersCharges();
 }

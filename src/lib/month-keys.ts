@@ -8,7 +8,7 @@ export function parseMonthKey(raw: string): string | null {
   return s;
 }
 
-/** Primeiro mes em divida: mes civil da data de entrada (UTC). */
+/** Primeiro mês em dívida: mês civil da data de entrada (UTC). */
 export function monthKeyFromUtcDate(d: Date): string {
   return `${d.getUTCFullYear()}-${String(d.getUTCMonth() + 1).padStart(2, "0")}`;
 }

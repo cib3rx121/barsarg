@@ -1,3 +1,4 @@
+import Image from "next/image";
 import Link from "next/link";
 import { cookies } from "next/headers";
 import { redirect } from "next/navigation";
@@ -14,7 +15,10 @@ import {
   firstChargeMonthKey,
 } from "@/lib/balance";
 import { formatMonthKeyLongPt } from "@/lib/month-keys";
+import { CopyConsultaUrlButton } from "@/components/CopyConsultaUrlButton";
 import { requireAdminSession } from "@/lib/auth-admin";
+import { getConsultaQrDataUrl } from "@/lib/consulta-qr";
+import { getPublicOrigin } from "@/lib/public-url";
 import { prisma } from "@/lib/prisma";
 import { QUOTA_SETTINGS_ID } from "@/lib/quota";
 
@@ -43,8 +47,25 @@ const dateTimeFmt = new Intl.DateTimeFormat("pt-PT", {
   minute: "2-digit",
 });
 
-const navLinkClass =
-  "inline-flex items-center justify-center rounded-full border border-[#8b9678] bg-[#f5f1e4] px-4 py-2 text-sm font-medium text-[#2f3a2d] shadow-sm transition hover:bg-[#ece8da] dark:border-[#6b775d] dark:bg-[#2a3528] dark:text-[#e8e3d3] dark:hover:bg-[#3a4538]";
+const inpt =
+  "w-full min-h-[2.75rem] cursor-pointer rounded-xl border border-slate-200/90 bg-white px-3.5 py-2.5 text-sm text-slate-900 shadow-sm transition duration-200 placeholder:text-slate-400 focus:border-emerald-500/50 focus:outline-none focus:ring-2 focus:ring-emerald-500/20 dark:border-slate-600 dark:bg-slate-950/50 dark:text-slate-100 dark:focus:border-emerald-400/50";
+
+const inptSelect = `${inpt} appearance-none bg-[length:1rem] bg-[right_0.65rem_center] bg-no-repeat pr-10 dark:bg-slate-950/50`;
+
+const btnPrimary =
+  "inline-flex items-center justify-center rounded-xl bg-emerald-600 px-5 py-2.5 text-sm font-semibold text-white shadow-lg shadow-emerald-600/20 transition duration-200 hover:bg-emerald-500 focus:outline-none focus:ring-2 focus:ring-emerald-500/35 active:scale-[0.99] dark:bg-emerald-600 dark:hover:bg-emerald-500";
+
+const btnSecondary =
+  "inline-flex items-center justify-center rounded-xl border border-slate-200 bg-white px-5 py-2.5 text-sm font-semibold text-slate-800 shadow-sm transition duration-200 hover:border-slate-300 hover:bg-slate-50 focus:outline-none focus:ring-2 focus:ring-slate-400/25 active:scale-[0.99] dark:border-slate-600 dark:bg-slate-800 dark:text-slate-100 dark:hover:bg-slate-700/90";
+
+const btnMuted =
+  "inline-flex items-center justify-center rounded-xl bg-slate-700 px-5 py-2.5 text-sm font-semibold text-white shadow-md transition duration-200 hover:bg-slate-600 focus:outline-none focus:ring-2 focus:ring-slate-500/30 active:scale-[0.99] dark:bg-slate-600 dark:hover:bg-slate-500";
+
+const card =
+  "rounded-3xl border border-slate-200/80 bg-white/90 p-6 shadow-xl shadow-slate-200/40 backdrop-blur-sm dark:border-slate-700/80 dark:bg-slate-900/85 dark:shadow-black/40";
+
+const navPill =
+  "inline-flex items-center justify-center rounded-full border border-slate-200/90 bg-white/90 px-4 py-2 text-sm font-medium text-slate-700 shadow-sm transition duration-200 hover:border-emerald-300/60 hover:bg-emerald-50/80 hover:text-emerald-900 dark:border-slate-600 dark:bg-slate-800/80 dark:text-slate-200 dark:hover:border-emerald-700 dark:hover:bg-emerald-950/40 dark:hover:text-emerald-100";
 
 const sectionClass = "scroll-mt-28";
 
@@ -61,7 +82,7 @@ export default async function AdminPage({ searchParams }: AdminPageProps) {
   const payErr = params.error;
   const payErrorMessage =
     payErr === "4"
-      ? "Escolhe utilizador, indica o valor pago (EUR) e, se preencheres o mes, usa o formato AAAA-MM."
+      ? "Selecione o associado, indique o valor (EUR) e, se preencher o mês, use o formato AAAA-MM."
       : null;
 
   const [users, quotaRow] = await Promise.all([
@@ -75,6 +96,10 @@ export default async function AdminPage({ searchParams }: AdminPageProps) {
 
   const balanceByUser = await computeBalancesForUsers(users);
 
+  const publicOrigin = await getPublicOrigin();
+  const consultaUrl = `${publicOrigin}/consulta`;
+  const consultaQrDataUrl = await getConsultaQrDataUrl(consultaUrl);
+
   const quotaDefaultDisplay = quotaRow
     ? (quotaRow.amountCents / 100).toFixed(2).replace(".", ",")
     : "";
@@ -87,99 +112,162 @@ export default async function AdminPage({ searchParams }: AdminPageProps) {
   }
 
   return (
-    <div className="min-h-screen bg-[#f2efe2] px-4 py-8 pb-16 dark:bg-[#1a2119]">
-      <div className="mx-auto w-full max-w-3xl">
-        <header className="rounded-2xl border border-[#7f8a6a] bg-[#fcfbf6] p-6 shadow-sm dark:border-[#647157] dark:bg-[#202a20]">
-          <p className="text-xs font-semibold uppercase tracking-[0.2em] text-[#6f7d5a] dark:text-[#b7c29d]">
+    <div className="relative min-h-screen overflow-x-hidden bg-gradient-to-br from-slate-50 via-emerald-50/35 to-slate-100 pb-20 dark:from-slate-950 dark:via-emerald-950/25 dark:to-slate-900">
+      <div
+        className="pointer-events-none absolute inset-0 opacity-35 dark:opacity-20"
+        aria-hidden
+        style={{
+          backgroundImage:
+            "radial-gradient(circle at 15% 10%, rgba(16,185,129,0.12), transparent 42%), radial-gradient(circle at 90% 90%, rgba(59,130,246,0.1), transparent 45%)",
+        }}
+      />
+
+      <div className="admin-shell relative mx-auto w-full max-w-5xl px-4 py-10 sm:px-6">
+        <header
+          className={`admin-header-glow admin-panel-section relative overflow-hidden rounded-3xl border border-slate-200/80 bg-white/95 p-8 shadow-xl shadow-slate-300/30 backdrop-blur-md dark:border-slate-700/80 dark:bg-slate-900/90 dark:shadow-black/40`}
+        >
+          <p className="text-[0.65rem] font-semibold uppercase tracking-[0.28em] text-emerald-700 dark:text-emerald-400">
             Bar de Sargentos
           </p>
-          <h1 className="mt-1 text-2xl font-bold text-[#2f3a2d] dark:text-[#e8e3d3]">
-            Painel de administracao
+          <h1 className="mt-3 text-3xl font-semibold tracking-tight text-slate-900 dark:text-white">
+            Painel de administração
           </h1>
-          <p className="mt-2 text-sm leading-relaxed text-[#4a5644] dark:text-[#c5cfb2]">
-            Tres passos: define a <strong className="font-semibold">cota</strong>, gere a{" "}
-            <strong className="font-semibold">malta</strong>, regista{" "}
-            <strong className="font-semibold">pagamentos</strong> (o saldo em euros e a
-            referencia; os meses sao uma estimativa).
+          <p className="mt-3 max-w-2xl text-sm leading-relaxed text-slate-600 dark:text-slate-400">
+            Configure o valor da mensalidade, registe associados e movimentos de caixa. O
+            saldo em euros reflete todos os lançamentos; a estimativa em meses depende
+            do valor atual da cota.
           </p>
-          <div className="mt-5 flex flex-wrap gap-2">
-            <Link href="/" className={navLinkClass}>
-              Inicio
+          <div className="mt-6 flex flex-wrap gap-3">
+            <Link
+              href="/"
+              className={`${navPill} border-emerald-200/80 bg-emerald-50/50 dark:border-emerald-800/50 dark:bg-emerald-950/30`}
+            >
+              Página inicial
             </Link>
             <form action={logout}>
-              <button
-                type="submit"
-                className="inline-flex rounded-full bg-[#2f3b2f] px-4 py-2 text-sm font-semibold text-[#f6f3e7] transition hover:bg-[#3b4a39] dark:bg-[#b7c29d] dark:text-[#1e251d] dark:hover:bg-[#cad3b3]"
-              >
-                Sair
+              <button type="submit" className={btnSecondary}>
+                Terminar sessão
               </button>
             </form>
           </div>
         </header>
 
         <nav
-          className="sticky top-4 z-10 mt-6 flex flex-wrap gap-2 rounded-2xl border border-[#c4d1b3] bg-[#fcfbf6]/95 p-3 shadow-sm backdrop-blur dark:border-[#4f5a45] dark:bg-[#202a20]/95"
-          aria-label="Secoes do painel"
+          className="admin-panel-section sticky top-4 z-20 mt-8 flex flex-wrap gap-2 rounded-2xl border border-slate-200/70 bg-white/85 p-3 shadow-lg shadow-slate-200/30 backdrop-blur-md dark:border-slate-700/70 dark:bg-slate-900/85 dark:shadow-black/30"
+          aria-label="Secções do painel"
         >
-          <a href="#cota" className={navLinkClass}>
-            1. Cota
+          <a href="#qr-consulta" className={navPill}>
+            QR consulta
           </a>
-          <a href="#malta" className={navLinkClass}>
-            2. Malta
+          <a href="#cota" className={navPill}>
+            Cota
           </a>
-          <a href="#pagamentos" className={navLinkClass}>
-            3. Pagamentos
+          <a href="#membros" className={navPill}>
+            Membros
           </a>
-          <a href="#ausencias" className={navLinkClass}>
-            4. Ausencias
+          <a href="#pagamentos" className={navPill}>
+            Pagamentos
+          </a>
+          <a href="#ausencias" className={navPill}>
+            Ausências
           </a>
         </nav>
 
-        {/* 1. Cota unica */}
+        {/* QR — consulta pública */}
         <section
-          id="cota"
-          className={`${sectionClass} mt-8 rounded-2xl border border-[#7f8a6a] bg-[#fcfbf6] p-6 shadow-sm dark:border-[#647157] dark:bg-[#202a20]`}
+          id="qr-consulta"
+          className={`admin-panel-section ${sectionClass} mt-8 ${card}`}
         >
-          <h2 className="text-lg font-semibold text-[#2f3a2d] dark:text-[#e8e3d3]">
-            Cota mensal
+          <h2 className="text-lg font-semibold text-slate-900 dark:text-white">
+            Código QR — consulta geral
           </h2>
-          <p className="mt-2 text-sm leading-relaxed text-[#4a5644] dark:text-[#c5cfb2]">
-            Um unico valor em euros aplica-se a <strong>todos</strong> os meses (cargas
-            mensais e estimativa de &quot;meses em falta&quot;). O saldo real vem dos
-            lancamentos.
+          <p className="mt-2 max-w-2xl text-sm leading-relaxed text-slate-600 dark:text-slate-400">
+            Gere um cartaz ou etiqueta com este código: ao ler com a câmara do telemóvel,
+            abre a página pública de consulta (introdução do PIN). Confirme em produção
+            que o endereço abaixo corresponde ao domínio do site.
           </p>
+          <div className="mt-6 flex flex-col items-start gap-6 sm:flex-row sm:items-center">
+            <div className="rounded-2xl border border-slate-200 bg-white p-4 shadow-inner dark:border-slate-600 dark:bg-slate-950">
+              <Image
+                src={consultaQrDataUrl}
+                width={280}
+                height={280}
+                alt="Código QR para a página de consulta pública"
+                className="h-[280px] w-[280px]"
+                unoptimized
+              />
+            </div>
+            <div className="min-w-0 flex-1 space-y-3">
+              <p className="text-xs font-medium uppercase tracking-wide text-slate-500 dark:text-slate-400">
+                Endereço codificado
+              </p>
+              <p className="break-all font-mono text-sm text-slate-800 dark:text-slate-200">
+                {consultaUrl}
+              </p>
+              <div className="flex flex-wrap gap-2 pt-1">
+                <CopyConsultaUrlButton url={consultaUrl} />
+                <a
+                  href={consultaQrDataUrl}
+                  download="qr-consulta-bar-de-sargentos.png"
+                  className={`${btnSecondary} inline-flex`}
+                >
+                  Descarregar PNG
+                </a>
+              </div>
+            </div>
+          </div>
+        </section>
+
+        {/* Cota */}
+        <section id="cota" className={`admin-panel-section ${sectionClass} mt-8 ${card}`}>
+          <div className="flex flex-wrap items-start justify-between gap-4">
+            <div>
+              <h2 className="text-lg font-semibold text-slate-900 dark:text-white">
+                Mensalidade global
+              </h2>
+              <p className="mt-2 max-w-xl text-sm leading-relaxed text-slate-600 dark:text-slate-400">
+                Valor único aplicável a todos os meses. Serve de referência para cargas
+                automáticas e para a estimativa de meses em dívida; o saldo efetivo
+                resulta sempre dos lançamentos.
+              </p>
+            </div>
+          </div>
 
           {quotaRow ? (
-            <div className="mt-4 rounded-xl border border-[#c4d1b3] bg-[#f8f6ee] px-4 py-3 dark:border-[#4f5a45] dark:bg-[#273126]">
-              <p className="text-xs font-medium uppercase tracking-wide text-[#6f7d5a] dark:text-[#b7c29d]">
-                Valor actual
+            <div className="mt-6 rounded-2xl border border-emerald-200/60 bg-gradient-to-br from-emerald-50/90 to-white px-5 py-4 dark:border-emerald-900/40 dark:from-emerald-950/40 dark:to-slate-900/50">
+              <p className="text-xs font-medium uppercase tracking-wide text-emerald-800 dark:text-emerald-400">
+                Valor em vigor
               </p>
-              <p className="mt-1 text-2xl font-semibold tabular-nums text-[#2f3a2d] dark:text-[#e8e3d3]">
+              <p className="mt-1 text-3xl font-semibold tabular-nums tracking-tight text-slate-900 dark:text-white">
                 {eurFmt.format(quotaRow.amountCents / 100)}
               </p>
-              <p className="mt-1 text-xs text-[#4a5644] dark:text-[#c5cfb2]">
-                Actualizado em {dateTimeFmt.format(quotaRow.updatedAt)}
+              <p className="mt-2 text-xs text-slate-600 dark:text-slate-400">
+                Última atualização: {dateTimeFmt.format(quotaRow.updatedAt)}
               </p>
             </div>
           ) : (
-            <p className="mt-4 rounded-lg border border-dashed border-amber-700/40 bg-amber-50 p-3 text-sm text-amber-950 dark:bg-amber-950/20 dark:text-amber-100">
-              Ainda nao ha cota definida. Preenche abaixo para comecar.
+            <p className="mt-6 rounded-2xl border border-amber-200/80 bg-amber-50/90 px-4 py-3 text-sm text-amber-950 dark:border-amber-900/40 dark:bg-amber-950/25 dark:text-amber-100">
+              Ainda não foi definido um valor de mensalidade. Indique-o abaixo para
+              activar as cargas e as estimativas.
             </p>
           )}
 
           {hasQuotaFormError ? (
-            <p className="mt-4 rounded-md bg-red-100 p-3 text-sm text-red-800 dark:bg-red-950/30 dark:text-red-300">
-              Indica um valor maior que zero (ex.: 12,50).
+            <p
+              className="mt-4 rounded-xl border border-red-200/80 bg-red-50 px-4 py-3 text-sm text-red-800 dark:border-red-900/50 dark:bg-red-950/35 dark:text-red-200"
+              role="alert"
+            >
+              Indique um montante superior a zero (ex.: 12,50).
             </p>
           ) : null}
 
-          <form action={saveGlobalQuota} className="mt-5 space-y-4">
+          <form action={saveGlobalQuota} className="mt-6 space-y-4">
             <div className="max-w-xs">
               <label
                 htmlFor="amountEur"
-                className="mb-1 block text-sm font-medium text-[#3f4a3a] dark:text-[#c5cfb2]"
+                className="mb-1.5 block text-sm font-medium text-slate-700 dark:text-slate-300"
               >
-                Valor (EUR) por mes
+                Valor mensal (EUR)
               </label>
               <input
                 id="amountEur"
@@ -189,58 +277,56 @@ export default async function AdminPage({ searchParams }: AdminPageProps) {
                 required
                 placeholder="12,50"
                 defaultValue={quotaDefaultDisplay}
-                className="w-full rounded-lg border border-[#8b9678] bg-white px-3 py-2.5 text-base text-[#232b21] outline-none ring-[#5b6a4a] transition focus:ring-2 dark:border-[#6b775d] dark:bg-[#1b241b] dark:text-[#e8e3d3]"
+                className={inpt}
               />
             </div>
-            <button
-              type="submit"
-              className="rounded-lg bg-[#2f3b2f] px-6 py-2.5 text-sm font-semibold text-[#f6f3e7] transition hover:bg-[#3b4a39] dark:bg-[#b7c29d] dark:text-[#1e251d] dark:hover:bg-[#cad3b3]"
-            >
-              Guardar cota
+            <button type="submit" className={btnPrimary}>
+              Guardar mensalidade
             </button>
           </form>
         </section>
 
-        {/* 2. Malta */}
+        {/* Membros */}
         <section
-          id="malta"
-          className={`${sectionClass} mt-8 rounded-2xl border border-[#7f8a6a] bg-[#fcfbf6] p-6 shadow-sm dark:border-[#647157] dark:bg-[#202a20]`}
+          id="membros"
+          className={`admin-panel-section ${sectionClass} mt-8 ${card}`}
         >
-          <h2 className="text-lg font-semibold text-[#2f3a2d] dark:text-[#e8e3d3]">
-            Malta
+          <h2 className="text-lg font-semibold text-slate-900 dark:text-white">
+            Associados
           </h2>
-          <p className="mt-2 text-sm text-[#4a5644] dark:text-[#c5cfb2]">
-            Adiciona cada pessoa, a data em que entrou e, se for preciso, a partir de que
-            data deve comecar a pagar cota (por defeito: o mes da entrada). As cargas
-            mensais alinham-se com a cota definida em 1.
+          <p className="mt-2 max-w-2xl text-sm leading-relaxed text-slate-600 dark:text-slate-400">
+            Registe o nome e a data de filiação. As datas utilizam o calendário do
+            sistema (ícone à direita do campo). Se a cobrança de mensalidades deva iniciar
+            noutro mês civil, indique a data correspondente; caso contrário, deixe em
+            branco para contar desde o mês de entrada.
           </p>
 
           {hasUserFormError ? (
-            <p className="mt-4 rounded-md bg-red-100 p-3 text-sm text-red-800 dark:bg-red-950/30 dark:text-red-300">
-              Preenche nome e data de entrada.
+            <p className="mt-4 rounded-xl border border-red-200/80 bg-red-50 px-4 py-3 text-sm text-red-800 dark:border-red-900/50 dark:bg-red-950/35 dark:text-red-200">
+              Verifique o nome e a data de entrada.
             </p>
           ) : null}
           {hasChargeStartBeforeEntry ? (
-            <p className="mt-4 rounded-md bg-red-100 p-3 text-sm text-red-800 dark:bg-red-950/30 dark:text-red-300">
-              A primeira cobranca nao pode ser antes do mes da entrada.
+            <p className="mt-4 rounded-xl border border-red-200/80 bg-red-50 px-4 py-3 text-sm text-red-800 dark:border-red-900/50 dark:bg-red-950/35 dark:text-red-200">
+              A data de início da cobrança não pode ser anterior ao mês de entrada.
             </p>
           ) : null}
           {hasBillingFormError ? (
-            <p className="mt-4 rounded-md bg-red-100 p-3 text-sm text-red-800 dark:bg-red-950/30 dark:text-red-300">
-              Verifica utilizador, meses (inicio antes ou igual ao fim) e formatos.
+            <p className="mt-4 rounded-xl border border-red-200/80 bg-red-50 px-4 py-3 text-sm text-red-800 dark:border-red-900/50 dark:bg-red-950/35 dark:text-red-200">
+              Verifique o associado, o intervalo de meses (início ≤ fim) e os formatos.
             </p>
           ) : null}
 
           <form
             action={createUser}
-            className="mt-5 flex flex-col gap-4 sm:flex-row sm:flex-wrap sm:items-end"
+            className="mt-6 grid gap-4 sm:grid-cols-2 lg:grid-cols-4 lg:items-end"
           >
-            <div className="min-w-[200px] flex-1">
+            <div className="sm:col-span-2 lg:col-span-1">
               <label
                 htmlFor="name"
-                className="mb-1 block text-sm font-medium text-[#3f4a3a] dark:text-[#c5cfb2]"
+                className="mb-1.5 block text-sm font-medium text-slate-700 dark:text-slate-300"
               >
-                Nome
+                Nome completo
               </label>
               <input
                 id="name"
@@ -248,13 +334,13 @@ export default async function AdminPage({ searchParams }: AdminPageProps) {
                 type="text"
                 required
                 autoComplete="name"
-                className="w-full rounded-lg border border-[#8b9678] bg-white px-3 py-2 text-sm text-[#232b21] outline-none ring-[#5b6a4a] transition focus:ring-2 dark:border-[#6b775d] dark:bg-[#1b241b] dark:text-[#e8e3d3]"
+                className={inpt}
               />
             </div>
-            <div className="min-w-[180px]">
+            <div>
               <label
                 htmlFor="entryDate"
-                className="mb-1 block text-sm font-medium text-[#3f4a3a] dark:text-[#c5cfb2]"
+                className="mb-1.5 block text-sm font-medium text-slate-700 dark:text-slate-300"
               >
                 Data de entrada
               </label>
@@ -263,69 +349,71 @@ export default async function AdminPage({ searchParams }: AdminPageProps) {
                 name="entryDate"
                 type="date"
                 required
-                className="w-full rounded-lg border border-[#8b9678] bg-white px-3 py-2 text-sm text-[#232b21] outline-none ring-[#5b6a4a] transition focus:ring-2 dark:border-[#6b775d] dark:bg-[#1b241b] dark:text-[#e8e3d3]"
+                className={inpt}
               />
+              <p className="mt-1 text-xs text-slate-500 dark:text-slate-500">
+                Calendário nativo do dispositivo
+              </p>
             </div>
-            <div className="min-w-[200px]">
+            <div>
               <label
                 htmlFor="chargeStartDate"
-                className="mb-1 block text-sm font-medium text-[#3f4a3a] dark:text-[#c5cfb2]"
+                className="mb-1.5 block text-sm font-medium text-slate-700 dark:text-slate-300"
               >
-                Primeira cobranca (opcional)
+                Início da cobrança (opcional)
               </label>
               <input
                 id="chargeStartDate"
                 name="chargeStartDate"
                 type="date"
-                className="w-full rounded-lg border border-[#8b9678] bg-white px-3 py-2 text-sm text-[#232b21] outline-none ring-[#5b6a4a] transition focus:ring-2 dark:border-[#6b775d] dark:bg-[#1b241b] dark:text-[#e8e3d3]"
+                className={inpt}
               />
-              <p className="mt-1 text-xs text-[#6f7d5a] dark:text-[#8a9578]">
-                Vazio = desde o mes da entrada
+              <p className="mt-1 text-xs text-slate-500 dark:text-slate-500">
+                Vazio = primeiro mês de entrada
               </p>
             </div>
-            <button
-              type="submit"
-              className="rounded-lg bg-[#2f3b2f] px-5 py-2.5 text-sm font-semibold text-[#f6f3e7] transition hover:bg-[#3b4a39] dark:bg-[#b7c29d] dark:text-[#1e251d] dark:hover:bg-[#cad3b3]"
-            >
-              Adicionar pessoa
-            </button>
+            <div className="flex items-end">
+              <button type="submit" className={`${btnPrimary} w-full sm:w-auto`}>
+                Adicionar associado
+              </button>
+            </div>
           </form>
 
           {users.length === 0 ? (
-            <p className="mt-6 rounded-lg border border-dashed border-[#9ba78a] bg-[#f5f1e4] p-4 text-sm text-[#4a5644] dark:border-[#738063] dark:bg-[#273126] dark:text-[#cdd6bd]">
-              Ainda ninguem na lista.
+            <p className="mt-8 rounded-2xl border border-dashed border-slate-300 bg-slate-50/80 px-5 py-6 text-center text-sm text-slate-600 dark:border-slate-600 dark:bg-slate-800/50 dark:text-slate-400">
+              Ainda não existem associados registados.
             </p>
           ) : (
-            <div className="mt-6 overflow-x-auto rounded-xl border border-[#c4d1b3] dark:border-[#4f5a45]">
-              <table className="w-full min-w-[820px] text-left text-sm">
-                <thead className="bg-[#e8eadf] text-[#3d4a38] dark:bg-[#2a3528] dark:text-[#d5dfc4]">
+            <div className="mt-8 overflow-x-auto rounded-2xl border border-slate-200/80 dark:border-slate-700/80">
+              <table className="w-full min-w-[860px] text-left text-sm">
+                <thead className="bg-slate-100/90 text-slate-700 dark:bg-slate-800/90 dark:text-slate-200">
                   <tr>
-                    <th className="px-4 py-3 font-semibold">Nome</th>
-                    <th className="px-4 py-3 font-semibold">Entrada</th>
-                    <th className="px-4 py-3 font-semibold">Cota desde</th>
-                    <th className="px-4 py-3 font-semibold">Saldo</th>
-                    <th className="px-4 py-3 font-semibold">Meses (estim.)</th>
-                    <th className="px-4 py-3 font-semibold">Estado</th>
-                    <th className="px-4 py-3 font-semibold">Registado</th>
+                    <th className="px-4 py-3.5 font-semibold">Nome</th>
+                    <th className="px-4 py-3.5 font-semibold">Entrada</th>
+                    <th className="px-4 py-3.5 font-semibold">Cobrança desde</th>
+                    <th className="px-4 py-3.5 font-semibold">Saldo</th>
+                    <th className="px-4 py-3.5 font-semibold">Meses (estim.)</th>
+                    <th className="px-4 py-3.5 font-semibold">Estado</th>
+                    <th className="px-4 py-3.5 font-semibold">Registo</th>
                   </tr>
                 </thead>
-                <tbody className="divide-y divide-[#d8e0cc] dark:divide-[#3d4a38]">
+                <tbody className="divide-y divide-slate-200/80 dark:divide-slate-700/80">
                   {users.map((u) => {
                     const d = balanceByUser.get(u.id);
                     const b = d?.balanceCents ?? 0;
                     const warn = d?.quotaNotConfigured
-                      ? "Define a cota em 1 para estimar meses."
+                      ? "Defina a mensalidade na secção «Cota» para obter a estimativa."
                       : null;
                     return (
                       <tr
                         key={u.id}
-                        className="bg-white/80 text-[#2f3a2d] dark:bg-[#1b241b]/80 dark:text-[#e8e3d3]"
+                        className="bg-white/90 text-slate-900 transition-colors duration-150 hover:bg-emerald-50/50 dark:bg-slate-900/40 dark:text-slate-100 dark:hover:bg-emerald-950/25"
                       >
-                        <td className="px-4 py-3 font-medium">{u.name}</td>
-                        <td className="px-4 py-3 tabular-nums text-[#4a5644] dark:text-[#c5cfb2]">
+                        <td className="px-4 py-3.5 font-medium">{u.name}</td>
+                        <td className="px-4 py-3.5 tabular-nums text-slate-600 dark:text-slate-400">
                           {dateFmt.format(u.entryDate)}
                         </td>
-                        <td className="px-4 py-3 text-[#4a5644] dark:text-[#c5cfb2]">
+                        <td className="px-4 py-3.5 text-slate-600 dark:text-slate-400">
                           {formatMonthKeyLongPt(
                             firstChargeMonthKey({
                               entryDate: u.entryDate,
@@ -333,41 +421,41 @@ export default async function AdminPage({ searchParams }: AdminPageProps) {
                             }),
                           )}
                         </td>
-                        <td className="px-4 py-3 tabular-nums font-medium">
+                        <td className="px-4 py-3.5 tabular-nums font-medium">
                           {b > 0 ? (
                             eurFmt.format(b / 100)
                           ) : b < 0 ? (
-                            <span className="text-[#1d5c38] dark:text-[#8fd4a8]">
+                            <span className="text-emerald-700 dark:text-emerald-400">
                               Crédito {eurFmt.format((-b) / 100)}
                             </span>
                           ) : (
                             eurFmt.format(0)
                           )}
                         </td>
-                        <td className="px-4 py-3 text-[#4a5644] dark:text-[#c5cfb2]">
+                        <td className="px-4 py-3.5 text-slate-600 dark:text-slate-400">
                           <span className="tabular-nums">
                             {d && !d.quotaNotConfigured
                               ? d.estimatedMonthsEquivalent
                               : "—"}
                           </span>
                           {warn ? (
-                            <span className="mt-1 block text-xs text-amber-800 dark:text-amber-200">
+                            <span className="mt-1 block text-xs text-amber-700 dark:text-amber-300">
                               {warn}
                             </span>
                           ) : null}
                         </td>
-                        <td className="px-4 py-3">
+                        <td className="px-4 py-3.5">
                           {u.active ? (
-                            <span className="rounded-full bg-[#d4e6c8] px-2 py-0.5 text-xs font-semibold text-[#2d4a22] dark:bg-[#3d5a35] dark:text-[#c8e8bc]">
+                            <span className="inline-flex rounded-full bg-emerald-100 px-2.5 py-0.5 text-xs font-semibold text-emerald-900 dark:bg-emerald-900/50 dark:text-emerald-200">
                               Ativo
                             </span>
                           ) : (
-                            <span className="rounded-full bg-[#e8e0d4] px-2 py-0.5 text-xs font-semibold text-[#5a5345] dark:bg-[#4a4538] dark:text-[#d4cbb8]">
+                            <span className="inline-flex rounded-full bg-slate-200 px-2.5 py-0.5 text-xs font-semibold text-slate-700 dark:bg-slate-700 dark:text-slate-200">
                               Inativo
                             </span>
                           )}
                         </td>
-                        <td className="px-4 py-3 tabular-nums text-[#4a5644] dark:text-[#c5cfb2]">
+                        <td className="px-4 py-3.5 tabular-nums text-slate-600 dark:text-slate-400">
                           {dateTimeFmt.format(u.createdAt)}
                         </td>
                       </tr>
@@ -378,42 +466,46 @@ export default async function AdminPage({ searchParams }: AdminPageProps) {
             </div>
           )}
 
+          {/* Ausências */}
           <div
             id="ausencias"
-            className={`${sectionClass} mt-10 rounded-xl border border-dashed border-[#9ba78a] bg-[#f8f6ee]/80 p-5 dark:border-[#738063] dark:bg-[#273126]/50`}
+            className={`${sectionClass} mt-10 rounded-2xl border border-slate-200/70 bg-slate-50/70 p-6 dark:border-slate-700/70 dark:bg-slate-800/40`}
           >
-            <h3 className="text-base font-semibold text-[#2f3a2d] dark:text-[#e8e3d3]">
-              Ausencias — isentar meses
+            <h3 className="text-base font-semibold text-slate-900 dark:text-white">
+              Isenção de mensalidades (ausência)
             </h3>
-            <p className="mt-2 text-sm text-[#4a5644] dark:text-[#c5cfb2]">
-              Se alguem estiver ausente durante um periodo, indica o intervalo de meses
-              (inclusive). Esses meses deixam de ter carga de cota; o saldo actualiza-se
-              na hora.
+            <p className="mt-2 text-sm leading-relaxed text-slate-600 dark:text-slate-400">
+              Para períodos de ausência devidamente justificados, indique o intervalo de
+              meses civil (calendário mensal abaixo). As cargas correspondentes serão
+              removidas e o saldo atualizado.
             </p>
 
             {users.length === 0 ? (
-              <p className="mt-3 text-sm text-[#4a5644] dark:text-[#c5cfb2]">
-                Adiciona primeiro pessoas acima.
+              <p className="mt-4 text-sm text-slate-600 dark:text-slate-400">
+                Adicione primeiro um associado na secção acima.
               </p>
             ) : (
               <form
                 action={waiveMonthRange}
-                className="mt-4 flex flex-col gap-4 lg:flex-row lg:flex-wrap lg:items-end"
+                className="mt-5 grid gap-4 lg:grid-cols-12 lg:items-end"
               >
-                <div className="min-w-[200px] flex-1">
+                <div className="lg:col-span-3">
                   <label
                     htmlFor="waiveUserId"
-                    className="mb-1 block text-sm font-medium text-[#3f4a3a] dark:text-[#c5cfb2]"
+                    className="mb-1.5 block text-sm font-medium text-slate-700 dark:text-slate-300"
                   >
-                    Quem
+                    Associado
                   </label>
                   <select
                     id="waiveUserId"
                     name="waiveUserId"
                     required
-                    className="w-full rounded-lg border border-[#8b9678] bg-white px-3 py-2 text-sm text-[#232b21] outline-none ring-[#5b6a4a] transition focus:ring-2 dark:border-[#6b775d] dark:bg-[#1b241b] dark:text-[#e8e3d3]"
+                    className={inptSelect}
+                    style={{
+                      backgroundImage: `url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 24 24' stroke='%2364758b'%3E%3Cpath stroke-linecap='round' stroke-linejoin='round' stroke-width='2' d='M19 9l-7 7-7-7'/%3E%3C/svg%3E")`,
+                    }}
                   >
-                    <option value="">Escolher…</option>
+                    <option value="">Selecionar…</option>
                     {users.map((u) => (
                       <option key={u.id} value={u.id}>
                         {u.name}
@@ -421,40 +513,40 @@ export default async function AdminPage({ searchParams }: AdminPageProps) {
                     ))}
                   </select>
                 </div>
-                <div className="min-w-[150px]">
+                <div className="lg:col-span-2">
                   <label
                     htmlFor="waiveFromMonth"
-                    className="mb-1 block text-sm font-medium text-[#3f4a3a] dark:text-[#c5cfb2]"
+                    className="mb-1.5 block text-sm font-medium text-slate-700 dark:text-slate-300"
                   >
-                    Mes inicial
+                    Mês inicial
                   </label>
                   <input
                     id="waiveFromMonth"
                     name="waiveFromMonth"
                     type="month"
                     required
-                    className="w-full rounded-lg border border-[#8b9678] bg-white px-3 py-2 text-sm text-[#232b21] outline-none ring-[#5b6a4a] transition focus:ring-2 dark:border-[#6b775d] dark:bg-[#1b241b] dark:text-[#e8e3d3]"
+                    className={inpt}
                   />
                 </div>
-                <div className="min-w-[150px]">
+                <div className="lg:col-span-2">
                   <label
                     htmlFor="waiveToMonth"
-                    className="mb-1 block text-sm font-medium text-[#3f4a3a] dark:text-[#c5cfb2]"
+                    className="mb-1.5 block text-sm font-medium text-slate-700 dark:text-slate-300"
                   >
-                    Mes final
+                    Mês final
                   </label>
                   <input
                     id="waiveToMonth"
                     name="waiveToMonth"
                     type="month"
                     required
-                    className="w-full rounded-lg border border-[#8b9678] bg-white px-3 py-2 text-sm text-[#232b21] outline-none ring-[#5b6a4a] transition focus:ring-2 dark:border-[#6b775d] dark:bg-[#1b241b] dark:text-[#e8e3d3]"
+                    className={inpt}
                   />
                 </div>
-                <div className="min-w-[200px] flex-1">
+                <div className="lg:col-span-3">
                   <label
                     htmlFor="waiveNote"
-                    className="mb-1 block text-sm font-medium text-[#3f4a3a] dark:text-[#c5cfb2]"
+                    className="mb-1.5 block text-sm font-medium text-slate-700 dark:text-slate-300"
                   >
                     Nota (opcional)
                   </label>
@@ -462,45 +554,47 @@ export default async function AdminPage({ searchParams }: AdminPageProps) {
                     id="waiveNote"
                     name="waiveNote"
                     type="text"
-                    placeholder="Ex.: ferias, missao"
-                    className="w-full rounded-lg border border-[#8b9678] bg-white px-3 py-2 text-sm text-[#232b21] outline-none ring-[#5b6a4a] transition focus:ring-2 dark:border-[#6b775d] dark:bg-[#1b241b] dark:text-[#e8e3d3]"
+                    placeholder="Ex.: serviço, licença"
+                    className={inpt}
                   />
                 </div>
-                <button
-                  type="submit"
-                  className="rounded-lg bg-[#4a5a42] px-5 py-2.5 text-sm font-semibold text-[#f6f3e7] transition hover:bg-[#5a6b52] dark:bg-[#5a6b52] dark:hover:bg-[#6a7c62]"
-                >
-                  Isentar meses
-                </button>
+                <div className="lg:col-span-2 flex">
+                  <button type="submit" className={`${btnMuted} w-full`}>
+                    Aplicar isenção
+                  </button>
+                </div>
               </form>
             )}
 
-            <h4 className="mt-8 text-sm font-semibold text-[#2f3a2d] dark:text-[#e8e3d3]">
-              Membro ja na lista: mudar inicio da cobranca
+            <h4 className="mt-10 text-sm font-semibold text-slate-900 dark:text-white">
+              Alterar data de início da cobrança
             </h4>
-            <p className="mt-1 text-sm text-[#4a5644] dark:text-[#c5cfb2]">
-              Ajusta a data a partir da qual as cotas mensais devem contar (nao pode ser
-              antes do mes da entrada). O saldo e as cargas sao recalculados.
+            <p className="mt-1 text-sm text-slate-600 dark:text-slate-400">
+              Use esta opção para associados já registados. A data não pode preceder o
+              mês de entrada. O sistema recalcula cargas e saldo.
             </p>
             {users.length === 0 ? null : (
               <form
                 action={updateUserChargeStart}
                 className="mt-4 flex flex-col gap-4 sm:flex-row sm:flex-wrap sm:items-end"
               >
-                <div className="min-w-[200px] flex-1">
+                <div className="min-w-[220px] flex-1">
                   <label
                     htmlFor="chargeStartUserId"
-                    className="mb-1 block text-sm font-medium text-[#3f4a3a] dark:text-[#c5cfb2]"
+                    className="mb-1.5 block text-sm font-medium text-slate-700 dark:text-slate-300"
                   >
-                    Pessoa
+                    Associado
                   </label>
                   <select
                     id="chargeStartUserId"
                     name="chargeStartUserId"
                     required
-                    className="w-full rounded-lg border border-[#8b9678] bg-white px-3 py-2 text-sm text-[#232b21] outline-none ring-[#5b6a4a] transition focus:ring-2 dark:border-[#6b775d] dark:bg-[#1b241b] dark:text-[#e8e3d3]"
+                    className={inptSelect}
+                    style={{
+                      backgroundImage: `url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 24 24' stroke='%2364758b'%3E%3Cpath stroke-linecap='round' stroke-linejoin='round' stroke-width='2' d='M19 9l-7 7-7-7'/%3E%3C/svg%3E")`,
+                    }}
                   >
-                    <option value="">Escolher…</option>
+                    <option value="">Selecionar…</option>
                     {users.map((u) => (
                       <option key={u.id} value={u.id}>
                         {u.name}
@@ -511,71 +605,71 @@ export default async function AdminPage({ searchParams }: AdminPageProps) {
                 <div className="min-w-[200px]">
                   <label
                     htmlFor="chargeStartDateEdit"
-                    className="mb-1 block text-sm font-medium text-[#3f4a3a] dark:text-[#c5cfb2]"
+                    className="mb-1.5 block text-sm font-medium text-slate-700 dark:text-slate-300"
                   >
-                    Primeira cobranca
+                    Primeira cobrança
                   </label>
                   <input
                     id="chargeStartDateEdit"
                     name="chargeStartDateEdit"
                     type="date"
                     required
-                    className="w-full rounded-lg border border-[#8b9678] bg-white px-3 py-2 text-sm text-[#232b21] outline-none ring-[#5b6a4a] transition focus:ring-2 dark:border-[#6b775d] dark:bg-[#1b241b] dark:text-[#e8e3d3]"
+                    className={inpt}
                   />
                 </div>
-                <button
-                  type="submit"
-                  className="rounded-lg border border-[#8b9678] bg-[#ece8da] px-5 py-2.5 text-sm font-semibold text-[#2f3a2d] transition hover:bg-[#e0dccf] dark:border-[#6b775d] dark:bg-[#3a4538] dark:text-[#e8e3d3] dark:hover:bg-[#4a5548]"
-                >
-                  Actualizar inicio
+                <button type="submit" className={btnSecondary}>
+                  Atualizar
                 </button>
               </form>
             )}
           </div>
         </section>
 
-        {/* 3. Pagamentos */}
+        {/* Pagamentos */}
         <section
           id="pagamentos"
-          className={`${sectionClass} mt-8 rounded-2xl border border-[#7f8a6a] bg-[#fcfbf6] p-6 shadow-sm dark:border-[#647157] dark:bg-[#202a20]`}
+          className={`admin-panel-section ${sectionClass} mt-8 ${card}`}
         >
-          <h2 className="text-lg font-semibold text-[#2f3a2d] dark:text-[#e8e3d3]">
-            Pagamentos
+          <h2 className="text-lg font-semibold text-slate-900 dark:text-white">
+            Registo de pagamentos
           </h2>
-          <p className="mt-2 text-sm text-[#4a5644] dark:text-[#c5cfb2]">
-            Regista o valor em euros (parcial ou total). O saldo diminui em conformidade.
-            O mes e opcional — serve apenas de referencia no historico.
+          <p className="mt-2 max-w-2xl text-sm leading-relaxed text-slate-600 dark:text-slate-400">
+            Indique o valor recebido (total ou parcial). O saldo diminui de acordo. O mês
+            é opcional e serve apenas de referência no histórico (selector mensal).
           </p>
 
           {payErrorMessage ? (
-            <p className="mt-4 rounded-md bg-red-100 p-3 text-sm text-red-800 dark:bg-red-950/30 dark:text-red-300">
+            <p className="mt-4 rounded-xl border border-red-200/80 bg-red-50 px-4 py-3 text-sm text-red-800 dark:border-red-900/50 dark:bg-red-950/35 dark:text-red-200">
               {payErrorMessage}
             </p>
           ) : null}
 
           {users.length === 0 ? (
-            <p className="mt-4 text-sm text-[#4a5644] dark:text-[#c5cfb2]">
-              Adiciona primeiro pessoas em Malta.
+            <p className="mt-6 text-sm text-slate-600 dark:text-slate-400">
+              Não é possível registar pagamentos sem associados.
             </p>
           ) : (
             <form
               action={recordPayment}
-              className="mt-5 flex flex-col gap-4 lg:flex-row lg:flex-wrap lg:items-end"
+              className="mt-6 grid gap-4 lg:grid-cols-12 lg:items-end"
             >
-              <div className="min-w-[200px] flex-1">
+              <div className="lg:col-span-4">
                 <label
                   htmlFor="payUserId"
-                  className="mb-1 block text-sm font-medium text-[#3f4a3a] dark:text-[#c5cfb2]"
+                  className="mb-1.5 block text-sm font-medium text-slate-700 dark:text-slate-300"
                 >
-                  Quem pagou
+                  Associado
                 </label>
                 <select
                   id="payUserId"
                   name="payUserId"
                   required
-                  className="w-full rounded-lg border border-[#8b9678] bg-white px-3 py-2 text-sm text-[#232b21] outline-none ring-[#5b6a4a] transition focus:ring-2 dark:border-[#6b775d] dark:bg-[#1b241b] dark:text-[#e8e3d3]"
+                  className={inptSelect}
+                  style={{
+                    backgroundImage: `url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 24 24' stroke='%2364758b'%3E%3Cpath stroke-linecap='round' stroke-linejoin='round' stroke-width='2' d='M19 9l-7 7-7-7'/%3E%3C/svg%3E")`,
+                  }}
                 >
-                  <option value="">Escolher…</option>
+                  <option value="">Selecionar…</option>
                   {users.map((u) => (
                     <option key={u.id} value={u.id}>
                       {u.name}
@@ -583,10 +677,10 @@ export default async function AdminPage({ searchParams }: AdminPageProps) {
                   ))}
                 </select>
               </div>
-              <div className="min-w-[140px]">
+              <div className="lg:col-span-2">
                 <label
                   htmlFor="payAmountEur"
-                  className="mb-1 block text-sm font-medium text-[#3f4a3a] dark:text-[#c5cfb2]"
+                  className="mb-1.5 block text-sm font-medium text-slate-700 dark:text-slate-300"
                 >
                   Valor (EUR)
                 </label>
@@ -597,27 +691,27 @@ export default async function AdminPage({ searchParams }: AdminPageProps) {
                   inputMode="decimal"
                   required
                   placeholder="12,50"
-                  className="w-full rounded-lg border border-[#8b9678] bg-white px-3 py-2 text-sm text-[#232b21] outline-none ring-[#5b6a4a] transition focus:ring-2 dark:border-[#6b775d] dark:bg-[#1b241b] dark:text-[#e8e3d3]"
+                  className={inpt}
                 />
               </div>
-              <div className="min-w-[160px]">
+              <div className="lg:col-span-2">
                 <label
                   htmlFor="payMonthKey"
-                  className="mb-1 block text-sm font-medium text-[#3f4a3a] dark:text-[#c5cfb2]"
+                  className="mb-1.5 block text-sm font-medium text-slate-700 dark:text-slate-300"
                 >
-                  Mes (opcional)
+                  Mês de referência (opcional)
                 </label>
                 <input
                   id="payMonthKey"
                   name="payMonthKey"
                   type="month"
-                  className="w-full rounded-lg border border-[#8b9678] bg-white px-3 py-2 text-sm text-[#232b21] outline-none ring-[#5b6a4a] transition focus:ring-2 dark:border-[#6b775d] dark:bg-[#1b241b] dark:text-[#e8e3d3]"
+                  className={inpt}
                 />
               </div>
-              <div className="min-w-[220px] flex-1">
+              <div className="lg:col-span-3">
                 <label
                   htmlFor="payNote"
-                  className="mb-1 block text-sm font-medium text-[#3f4a3a] dark:text-[#c5cfb2]"
+                  className="mb-1.5 block text-sm font-medium text-slate-700 dark:text-slate-300"
                 >
                   Nota (opcional)
                 </label>
@@ -625,16 +719,15 @@ export default async function AdminPage({ searchParams }: AdminPageProps) {
                   id="payNote"
                   name="payNote"
                   type="text"
-                  placeholder="Ex.: MB Way"
-                  className="w-full rounded-lg border border-[#8b9678] bg-white px-3 py-2 text-sm text-[#232b21] outline-none ring-[#5b6a4a] transition focus:ring-2 dark:border-[#6b775d] dark:bg-[#1b241b] dark:text-[#e8e3d3]"
+                  placeholder="Ex.: transferência, MB Way"
+                  className={inpt}
                 />
               </div>
-              <button
-                type="submit"
-                className="rounded-lg bg-[#2f3b2f] px-5 py-2.5 text-sm font-semibold text-[#f6f3e7] transition hover:bg-[#3b4a39] dark:bg-[#b7c29d] dark:text-[#1e251d] dark:hover:bg-[#cad3b3]"
-              >
-                Registar
-              </button>
+              <div className="lg:col-span-1 flex">
+                <button type="submit" className={`${btnPrimary} w-full`}>
+                  Registar
+                </button>
+              </div>
             </form>
           )}
         </section>

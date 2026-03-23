@@ -164,7 +164,7 @@ function parseAmountEurToCents(raw: string): number | null {
   return Math.round(n * 100);
 }
 
-/** Valor unico da cota mensal (igual para todos os meses). */
+/** Valor único da cota mensal (igual para todos os meses). */
 export async function saveGlobalQuota(formData: FormData) {
   await assertAdmin();
 

@@ -16,7 +16,7 @@ model User {
   id              String        @id @default(uuid()) @db.Uuid
   name            String
   entryDate       DateTime      @db.Date
-  /// Primeiro mes com cota; null = desde o mes civil da entrada.
+  /// Primeiro mês com cota; null = desde o mês civil da entrada.
   chargeStartDate DateTime?     @db.Date
   active          Boolean       @default(true)
   publicTokenHash String        @unique
@@ -25,7 +25,7 @@ model User {
   waivedMonths    WaivedMonth[]
 }
 
-/// Mes em que a pessoa nao deve cota (ex.: ausencia); remove a carga CHARGE_MONTH desse mes.
+/// Mês em que a pessoa não deve cota (ex.: ausência); remove a carga CHARGE_MONTH desse mês.
 model WaivedMonth {
   id        String   @id @default(uuid()) @db.Uuid
   userId    String   @db.Uuid
@@ -39,14 +39,14 @@ model WaivedMonth {
   @@index([userId])
 }
 
-/// Um unico registo (id = "default"): valor mensal igual para todos os meses.
+/// Um único registo (id = "default"): valor mensal igual para todos os meses.
 model QuotaSettings {
   id          String   @id
   amountCents Int
   updatedAt   DateTime @updatedAt
 }
 
-/// Saldo do utilizador = soma(deltaCents). Positivo = deve ao bar; negativo = credito.
+/// Saldo do utilizador = soma(deltaCents). Positivo = deve ao bar; negativo = crédito.
 model LedgerEntry {
   id         String   @id @default(uuid()) @db.Uuid
   userId     String   @db.Uuid

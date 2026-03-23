@@ -64,18 +64,19 @@ export default async function ConsultaPage({ searchParams }: ConsultaPageProps) 
       <div className="flex min-h-screen items-center justify-center bg-[#f2efe2] px-4 dark:bg-[#1a2119]">
         <main className="w-full max-w-md rounded-2xl border border-[#7f8a6a] bg-[#fcfbf6] p-8 shadow-sm dark:border-[#647157] dark:bg-[#202a20]">
           <p className="text-xs font-semibold uppercase tracking-[0.2em] text-[#6f7d5a] dark:text-[#b7c29d]">
-            Consulta da Tropa
+            Consulta pública
           </p>
           <h1 className="mt-2 text-xl font-bold text-[#2f3a2d] dark:text-[#e8e3d3]">
             Acesso por PIN
           </h1>
           <p className="mt-2 text-sm text-[#4a5644] dark:text-[#c5cfb2]">
-            So entra quem sabe a senha do dia.
+            Introduza o PIN fornecido pela administração. Só utilizadores autorizados
+            devem aceder a esta área.
           </p>
 
           {hasError ? (
             <p className="mt-4 rounded-md bg-red-100 p-3 text-sm text-red-800 dark:bg-red-950/30 dark:text-red-300">
-              PIN furado. Tenta outra vez.
+              PIN incorreto. Tente novamente.
             </p>
           ) : null}
 
@@ -101,7 +102,7 @@ export default async function ConsultaPage({ searchParams }: ConsultaPageProps) 
               type="submit"
               className="w-full rounded-lg bg-[#2f3b2f] px-4 py-2.5 text-sm font-semibold text-[#f6f3e7] transition hover:bg-[#3b4a39] dark:bg-[#b7c29d] dark:text-[#1e251d] dark:hover:bg-[#cad3b3]"
             >
-              Abrir passagem
+              Entrar
             </button>
           </form>
         </main>
@@ -122,14 +123,14 @@ export default async function ConsultaPage({ searchParams }: ConsultaPageProps) 
     <div className="min-h-screen bg-[#f2efe2] px-4 py-10 dark:bg-[#1a2119]">
       <main className="mx-auto w-full max-w-4xl rounded-2xl border border-[#7f8a6a] bg-[#fcfbf6] p-8 shadow-sm dark:border-[#647157] dark:bg-[#202a20]">
         <p className="text-xs font-semibold uppercase tracking-[0.2em] text-[#6f7d5a] dark:text-[#b7c29d]">
-          Consulta da Tropa
+          Consulta pública
         </p>
         <h1 className="mt-2 text-2xl font-bold text-[#2f3a2d] dark:text-[#e8e3d3]">
-          Situacao geral
+          Resumo
         </h1>
         <p className="mt-2 text-sm text-[#4a5644] dark:text-[#c5cfb2]">
-          Lista de utilizadores ativos e saldo (divida ou credito). Clica no nome para ver
-          o detalhe e o historico de lancamentos.
+          Lista de associados ativos e respectivo saldo (dívida ou crédito). Clique no
+          nome para ver o detalhe e o histórico de lançamentos.
         </p>
 
         <div className="mt-6 flex flex-wrap gap-3">
@@ -137,21 +138,21 @@ export default async function ConsultaPage({ searchParams }: ConsultaPageProps) 
             href="/"
             className="inline-flex rounded-lg border border-[#7f8a6a] px-4 py-2 text-sm font-semibold text-[#2f3a2d] transition hover:bg-[#ece8da] dark:border-[#95a386] dark:text-[#e8e3d3] dark:hover:bg-[#2a3528]"
           >
-            Regressar ao quartel-general
+            Página inicial
           </Link>
           <form action={logoutConsulta}>
             <button
               type="submit"
               className="inline-flex rounded-lg bg-[#2f3b2f] px-4 py-2 text-sm font-semibold text-[#f6f3e7] transition hover:bg-[#3b4a39] dark:bg-[#b7c29d] dark:text-[#1e251d] dark:hover:bg-[#cad3b3]"
             >
-              Fechar passagem
+              Terminar sessão
             </button>
           </form>
         </div>
 
         {users.length === 0 ? (
           <p className="mt-8 rounded-lg border border-dashed border-[#9ba78a] bg-[#f5f1e4] p-4 text-sm text-[#4a5644] dark:border-[#738063] dark:bg-[#273126] dark:text-[#cdd6bd]">
-            Ainda nao ha utilizadores ativos na lista.
+            Ainda não há utilizadores ativos na lista.
           </p>
         ) : (
           <div className="mt-8 overflow-x-auto rounded-xl border border-[#c4d1b3] dark:border-[#4f5a45]">
@@ -169,7 +170,7 @@ export default async function ConsultaPage({ searchParams }: ConsultaPageProps) 
                   const d = balanceByUser.get(u.id);
                   const b = d?.balanceCents ?? 0;
                   const noQuotaCfg = d?.quotaNotConfigured
-                    ? "Cota ainda nao definida — meses estimados indisponiveis."
+                    ? "Cota ainda não definida — meses estimados indisponíveis."
                     : null;
                   return (
                     <tr

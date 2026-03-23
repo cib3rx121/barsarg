@@ -1,4 +1,4 @@
-# Corre na nuvem (GitHub Actions) — util para quem nao tem Node na rede corporativa.
+# Corre na nuvem (GitHub Actions) — útil para quem não tem Node na rede corporativa.
 name: CI
 
 on:
@@ -14,7 +14,7 @@ jobs:
     env:
       # Acoes JS oficiais em Node 24 (deprecacao do Node 20 nos runners).
       FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true
-      # Prisma generate + Next build nao precisam de Postgres real; so precisam de URL valida.
+      # Prisma generate + Next build não precisam de Postgres real; só precisam de URL válida.
       DATABASE_URL: postgresql://ci:ci@127.0.0.1:5432/ci?schema=public
       ADMIN_USERNAME: ci
       ADMIN_PASSWORD: ci

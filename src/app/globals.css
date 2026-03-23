@@ -24,3 +24,70 @@ body {
   color: var(--foreground);
   font-family: var(--font-geist-sans), Arial, Helvetica, sans-serif;
 }
+
+/* Painel admin — animações discretas (sem JS) */
+@keyframes admin-fade-up {
+  from {
+    opacity: 0;
+    transform: translateY(10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes admin-shimmer {
+  0% {
+    background-position: 0% 50%;
+  }
+  100% {
+    background-position: 100% 50%;
+  }
+}
+
+.admin-shell .admin-panel-section {
+  animation: admin-fade-up 0.5s cubic-bezier(0.22, 1, 0.36, 1) both;
+}
+
+.admin-shell .admin-panel-section:nth-child(1) {
+  animation-delay: 0.02s;
+}
+.admin-shell .admin-panel-section:nth-child(2) {
+  animation-delay: 0.06s;
+}
+.admin-shell .admin-panel-section:nth-child(3) {
+  animation-delay: 0.1s;
+}
+.admin-shell .admin-panel-section:nth-child(4) {
+  animation-delay: 0.14s;
+}
+.admin-shell .admin-panel-section:nth-child(5) {
+  animation-delay: 0.18s;
+}
+.admin-shell .admin-panel-section:nth-child(6) {
+  animation-delay: 0.22s;
+}
+.admin-shell .admin-panel-section:nth-child(7) {
+  animation-delay: 0.26s;
+}
+
+.admin-header-glow {
+  background: linear-gradient(
+    135deg,
+    rgba(16, 185, 129, 0.08) 0%,
+    rgba(255, 255, 255, 0) 50%,
+    rgba(59, 130, 246, 0.06) 100%
+  );
+  background-size: 200% 200%;
+  animation: admin-shimmer 12s ease infinite;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .admin-shell .admin-panel-section {
+    animation: none;
+  }
+  .admin-header-glow {
+    animation: none;
+  }
+}
