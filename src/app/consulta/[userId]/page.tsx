@@ -21,7 +21,13 @@ export default async function ConsultaUserDetailPage({ params }: PageProps) {
     notFound();
   }
 
-  const { user, owedLines, monthsWithoutQuota, totalOwedCents } = data;
+  const {
+    user,
+    owedLines,
+    unpaidMonthsPendingQuota,
+    quotaNotConfigured,
+    totalOwedCents,
+  } = data;
 
   return (
     <div className="min-h-screen bg-[#f2efe2] px-4 py-10 dark:bg-[#1a2119]">
@@ -45,19 +51,27 @@ export default async function ConsultaUserDetailPage({ params }: PageProps) {
           </p>
         </div>
 
-        {monthsWithoutQuota.length > 0 ? (
+        {quotaNotConfigured ? (
           <p className="mt-4 rounded-md bg-amber-100 p-3 text-sm text-amber-950 dark:bg-amber-950/30 dark:text-amber-100">
-            Ha {monthsWithoutQuota.length} mes(es) sem cota definida pelo comando;
-            nesses meses o valor nao entra no total ate existir cota.
+            O comando ainda nao definiu o valor da cota mensal. O total so aparece
+            depois disso.
+            {unpaidMonthsPendingQuota.length > 0 ? (
+              <>
+                {" "}
+                Ha {unpaidMonthsPendingQuota.length} mes(es) por pagar desde a
+                entrada.
+              </>
+            ) : null}
           </p>
         ) : null}
 
-        {owedLines.length === 0 ? (
+        {!quotaNotConfigured && owedLines.length === 0 ? (
           <p className="mt-6 text-sm text-[#4a5644] dark:text-[#c5cfb2]">
-            Nada em falta neste momento (ou falta definir cotas para os meses em
-            divida).
+            Nada em falta neste momento.
           </p>
-        ) : (
+        ) : null}
+
+        {!quotaNotConfigured && owedLines.length > 0 ? (
           <div className="mt-6 overflow-x-auto rounded-xl border border-[#c4d1b3] dark:border-[#4f5a45]">
             <table className="w-full min-w-[280px] text-left text-sm">
               <thead className="bg-[#e8eadf] text-[#3d4a38] dark:bg-[#2a3528] dark:text-[#d5dfc4]">
@@ -83,7 +97,7 @@ export default async function ConsultaUserDetailPage({ params }: PageProps) {
               </tbody>
             </table>
           </div>
-        )}
+        ) : null}
 
         <div className="mt-8">
           <Link

@@ -1,4 +1,5 @@
 import { prisma } from "@/lib/prisma";
+import { getGlobalQuotaCents } from "@/lib/quota";
 import {
   currentMonthKeyUtc,
   monthKeyFromUtcDate,
@@ -8,7 +9,8 @@ import {
 export type DebtSummary = {
   totalOwedCents: number;
   owedMonthCount: number;
-  monthsWithoutQuota: string[];
+  /** true quando ainda nao ha valor de cota definido no painel */
+  quotaNotConfigured: boolean;
 };
 
 export async function computeDebtsForUsers(
@@ -18,20 +20,12 @@ export async function computeDebtsForUsers(
     return new Map();
   }
 
+  const globalCents = await getGlobalQuotaCents();
   const userIds = users.map((u) => u.id);
-  const [payments, quotas] = await Promise.all([
-    prisma.payment.findMany({
-      where: { userId: { in: userIds } },
-      select: { userId: true, monthKey: true },
-    }),
-    prisma.monthlyQuota.findMany({
-      select: { monthKey: true, amountCents: true },
-    }),
-  ]);
-
-  const quotaByMonth = new Map(
-    quotas.map((q) => [q.monthKey, q.amountCents]),
-  );
+  const payments = await prisma.payment.findMany({
+    where: { userId: { in: userIds } },
+    select: { userId: true, monthKey: true },
+  });
 
   const paidByUser = new Map<string, Set<string>>();
   for (const p of payments) {
@@ -47,25 +41,24 @@ export async function computeDebtsForUsers(
   for (const u of users) {
     const start = monthKeyFromUtcDate(u.entryDate);
     const paid = paidByUser.get(u.id) ?? new Set();
-    let totalOwedCents = 0;
-    let owedMonthCount = 0;
-    const monthsWithoutQuota: string[] = [];
-
+    let unpaidMonths = 0;
     for (const mk of monthKeysInclusive(start, end)) {
-      if (paid.has(mk)) continue;
-      const q = quotaByMonth.get(mk);
-      if (q === undefined) {
-        monthsWithoutQuota.push(mk);
-        continue;
-      }
-      totalOwedCents += q;
-      owedMonthCount += 1;
+      if (!paid.has(mk)) unpaidMonths += 1;
+    }
+
+    if (globalCents === null || globalCents <= 0) {
+      result.set(u.id, {
+        totalOwedCents: 0,
+        owedMonthCount: unpaidMonths,
+        quotaNotConfigured: true,
+      });
+      continue;
     }
 
     result.set(u.id, {
-      totalOwedCents,
-      owedMonthCount,
-      monthsWithoutQuota,
+      totalOwedCents: unpaidMonths * globalCents,
+      owedMonthCount: unpaidMonths,
+      quotaNotConfigured: false,
     });
   }
 
@@ -82,43 +75,48 @@ export async function computeOwedBreakdownForUser(userId: string) {
     return null;
   }
 
+  const globalCents = await getGlobalQuotaCents();
   const start = monthKeyFromUtcDate(user.entryDate);
   const end = currentMonthKeyUtc();
 
-  const [payments, quotas] = await Promise.all([
-    prisma.payment.findMany({
-      where: { userId },
-      select: { monthKey: true },
-    }),
-    prisma.monthlyQuota.findMany({
-      select: { monthKey: true, amountCents: true },
-    }),
-  ]);
+  const payments = await prisma.payment.findMany({
+    where: { userId },
+    select: { monthKey: true },
+  });
 
   const paid = new Set(payments.map((p) => p.monthKey));
-  const quotaByMonth = new Map(
-    quotas.map((q) => [q.monthKey, q.amountCents]),
-  );
 
-  const owedLines: OwedMonthLine[] = [];
-  const monthsWithoutQuota: string[] = [];
-
+  const unpaidMonths: string[] = [];
   for (const mk of monthKeysInclusive(start, end)) {
-    if (paid.has(mk)) continue;
-    const q = quotaByMonth.get(mk);
-    if (q === undefined) {
-      monthsWithoutQuota.push(mk);
-      continue;
+    if (!paid.has(mk)) {
+      unpaidMonths.push(mk);
     }
-    owedLines.push({ monthKey: mk, amountCents: q });
   }
+
+  const quotaNotConfigured = globalCents === null || globalCents <= 0;
+
+  if (quotaNotConfigured) {
+    return {
+      user,
+      owedLines: [] as OwedMonthLine[],
+      unpaidMonthsPendingQuota: unpaidMonths,
+      quotaNotConfigured: true,
+      totalOwedCents: 0,
+    };
+  }
+
+  const owedLines: OwedMonthLine[] = unpaidMonths.map((mk) => ({
+    monthKey: mk,
+    amountCents: globalCents,
+  }));
 
   const totalOwedCents = owedLines.reduce((s, l) => s + l.amountCents, 0);
 
   return {
     user,
     owedLines,
-    monthsWithoutQuota,
+    unpaidMonthsPendingQuota: [] as string[],
+    quotaNotConfigured: false,
     totalOwedCents,
   };
 }

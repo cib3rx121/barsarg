@@ -22,11 +22,11 @@ model User {
   payments        Payment[]
 }
 
-model MonthlyQuota {
-  id          String   @id @default(uuid()) @db.Uuid
-  monthKey    String   @unique
+/// Um unico registo (id = "default"): valor mensal igual para todos os meses.
+model QuotaSettings {
+  id          String   @id
   amountCents Int
-  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
 }
 
 model Payment {

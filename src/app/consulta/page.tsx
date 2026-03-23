@@ -162,8 +162,8 @@ export default async function ConsultaPage({ searchParams }: ConsultaPageProps) 
               <tbody className="divide-y divide-[#d8e0cc] dark:divide-[#3d4a38]">
                 {users.map((u) => {
                   const d = debtByUser.get(u.id);
-                  const noQuota = d?.monthsWithoutQuota.length
-                    ? `${d.monthsWithoutQuota.length} mes(es) sem cota`
+                  const noQuotaCfg = d?.quotaNotConfigured
+                    ? "Cota ainda nao definida pelo comando"
                     : null;
                   return (
                     <tr
@@ -182,15 +182,17 @@ export default async function ConsultaPage({ searchParams }: ConsultaPageProps) 
                         {dateFmt.format(u.entryDate)}
                       </td>
                       <td className="px-4 py-3 tabular-nums font-medium">
-                        {d ? eurFmt.format(d.totalOwedCents / 100) : "—"}
+                        {d && !d.quotaNotConfigured
+                          ? eurFmt.format(d.totalOwedCents / 100)
+                          : "—"}
                       </td>
                       <td className="px-4 py-3 text-[#4a5644] dark:text-[#c5cfb2]">
                         <span className="tabular-nums">
                           {d ? d.owedMonthCount : "—"}
                         </span>
-                        {noQuota ? (
+                        {noQuotaCfg ? (
                           <span className="mt-1 block text-xs text-amber-800 dark:text-amber-200">
-                            {noQuota}
+                            {noQuotaCfg}
                           </span>
                         ) : null}
                       </td>

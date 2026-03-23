@@ -6,6 +6,7 @@ import { cookies } from "next/headers";
 import { redirect } from "next/navigation";
 import { parseMonthKey } from "@/lib/month-keys";
 import { prisma } from "@/lib/prisma";
+import { getGlobalQuotaCents, QUOTA_SETTINGS_ID } from "@/lib/quota";
 
 async function assertAdmin() {
   const session = (await cookies()).get("barsarg_admin_session")?.value;
@@ -61,25 +62,26 @@ function parseAmountEurToCents(raw: string): number | null {
   return Math.round(n * 100);
 }
 
-export async function upsertMonthlyQuota(formData: FormData) {
+/** Valor unico da cota mensal (igual para todos os meses). */
+export async function saveGlobalQuota(formData: FormData) {
   await assertAdmin();
 
-  const monthKey = parseMonthKey(String(formData.get("monthKey") ?? ""));
   const amountCents = parseAmountEurToCents(
     String(formData.get("amountEur") ?? ""),
   );
 
-  if (!monthKey || amountCents === null || amountCents <= 0) {
+  if (amountCents === null || amountCents <= 0) {
     redirect("/admin?error=2");
   }
 
-  await prisma.monthlyQuota.upsert({
-    where: { monthKey },
-    create: { monthKey, amountCents },
+  await prisma.quotaSettings.upsert({
+    where: { id: QUOTA_SETTINGS_ID },
+    create: { id: QUOTA_SETTINGS_ID, amountCents },
     update: { amountCents },
   });
 
   revalidatePath("/admin");
+  revalidatePath("/consulta");
   redirect("/admin");
 }
 
@@ -94,10 +96,8 @@ export async function recordPayment(formData: FormData) {
     redirect("/admin?error=4");
   }
 
-  const quota = await prisma.monthlyQuota.findUnique({
-    where: { monthKey },
-  });
-  if (!quota) {
+  const globalCents = await getGlobalQuotaCents();
+  if (globalCents === null || globalCents <= 0) {
     redirect("/admin?error=5");
   }
 
@@ -114,11 +114,12 @@ export async function recordPayment(formData: FormData) {
     data: {
       userId,
       monthKey,
-      amountCents: quota.amountCents,
+      amountCents: globalCents,
       note: noteRaw ? noteRaw : null,
     },
   });
 
   revalidatePath("/admin");
+  revalidatePath("/consulta");
   redirect("/admin");
 }
