@@ -10,6 +10,8 @@ jobs:
   build:
     runs-on: ubuntu-latest
     env:
+      # Acoes JS oficiais em Node 24 (deprecacao do Node 20 nos runners).
+      FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true
       # Prisma generate + Next build nao precisam de Postgres real; so precisam de URL valida.
       DATABASE_URL: postgresql://ci:ci@127.0.0.1:5432/ci?schema=public
       ADMIN_USERNAME: ci
@@ -17,11 +19,11 @@ jobs:
       PUBLIC_CONSULT_PIN: "0000"
 
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v6
 
-      - uses: actions/setup-node@v4
+      - uses: actions/setup-node@v5
         with:
-          node-version: "22"
+          node-version: "24"
           cache: npm
 
       - name: Install dependencies
