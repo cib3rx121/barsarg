@@ -4,6 +4,7 @@ import { createHash, randomBytes } from "node:crypto";
 import { revalidatePath } from "next/cache";
 import { cookies } from "next/headers";
 import { redirect } from "next/navigation";
+import { parseMonthKey } from "@/lib/month-keys";
 import { prisma } from "@/lib/prisma";
 
 async function assertAdmin() {
@@ -52,16 +53,6 @@ export async function createUser(formData: FormData) {
   redirect("/admin");
 }
 
-const MONTH_KEY_RE = /^\d{4}-\d{2}$/;
-
-function parseMonthKey(raw: string): string | null {
-  const s = raw.trim();
-  if (!MONTH_KEY_RE.test(s)) return null;
-  const [y, m] = s.split("-").map(Number);
-  if (m < 1 || m > 12) return null;
-  return s;
-}
-
 function parseAmountEurToCents(raw: string): number | null {
   const normalized = raw.trim().replace(",", ".");
   if (!normalized) return null;
@@ -86,6 +77,46 @@ export async function upsertMonthlyQuota(formData: FormData) {
     where: { monthKey },
     create: { monthKey, amountCents },
     update: { amountCents },
+  });
+
+  revalidatePath("/admin");
+  redirect("/admin");
+}
+
+export async function recordPayment(formData: FormData) {
+  await assertAdmin();
+
+  const userId = String(formData.get("payUserId") ?? "").trim();
+  const monthKey = parseMonthKey(String(formData.get("payMonthKey") ?? ""));
+  const noteRaw = String(formData.get("payNote") ?? "").trim();
+
+  if (!userId || !monthKey) {
+    redirect("/admin?error=4");
+  }
+
+  const quota = await prisma.monthlyQuota.findUnique({
+    where: { monthKey },
+  });
+  if (!quota) {
+    redirect("/admin?error=5");
+  }
+
+  const existing = await prisma.payment.findUnique({
+    where: {
+      userId_monthKey: { userId, monthKey },
+    },
+  });
+  if (existing) {
+    redirect("/admin?error=6");
+  }
+
+  await prisma.payment.create({
+    data: {
+      userId,
+      monthKey,
+      amountCents: quota.amountCents,
+      note: noteRaw ? noteRaw : null,
+    },
   });
 
   revalidatePath("/admin");
