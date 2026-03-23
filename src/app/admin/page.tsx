@@ -1,7 +1,7 @@
 import Link from "next/link";
 import { cookies } from "next/headers";
 import { redirect } from "next/navigation";
-import { createUser } from "./actions";
+import { createUser, upsertMonthlyQuota } from "./actions";
 import { requireAdminSession } from "@/lib/auth-admin";
 import { prisma } from "@/lib/prisma";
 
@@ -10,6 +10,11 @@ type AdminPageProps = {
     error?: string;
   }>;
 };
+
+const eurFmt = new Intl.NumberFormat("pt-PT", {
+  style: "currency",
+  currency: "EUR",
+});
 
 const dateFmt = new Intl.DateTimeFormat("pt-PT", {
   day: "2-digit",
@@ -29,11 +34,17 @@ export default async function AdminPage({ searchParams }: AdminPageProps) {
   await requireAdminSession();
 
   const params = await searchParams;
-  const hasFormError = params.error === "1";
+  const hasUserFormError = params.error === "1";
+  const hasQuotaFormError = params.error === "2";
 
-  const users = await prisma.user.findMany({
-    orderBy: { createdAt: "desc" },
-  });
+  const [users, quotas] = await Promise.all([
+    prisma.user.findMany({
+      orderBy: { createdAt: "desc" },
+    }),
+    prisma.monthlyQuota.findMany({
+      orderBy: { monthKey: "desc" },
+    }),
+  ]);
 
   async function logout() {
     "use server";
@@ -74,6 +85,102 @@ export default async function AdminPage({ searchParams }: AdminPageProps) {
 
         <section className="mt-10 border-t border-dashed border-[#b5c4a3] pt-8 dark:border-[#4f5a45]">
           <h2 className="text-lg font-semibold text-[#2f3a2d] dark:text-[#e8e3d3]">
+            Cotas por mes
+          </h2>
+          <p className="mt-1 text-sm text-[#4a5644] dark:text-[#c5cfb2]">
+            Valor em EUR por mes civil (chave YYYY-MM). Se o mes ja existir, o valor
+            e atualizado.
+          </p>
+
+          {hasQuotaFormError ? (
+            <p className="mt-4 rounded-md bg-red-100 p-3 text-sm text-red-800 dark:bg-red-950/30 dark:text-red-300">
+              Indica um mes valido e um valor maior que zero (ex.: 12,50).
+            </p>
+          ) : null}
+
+          <form
+            action={upsertMonthlyQuota}
+            className="mt-4 flex flex-col gap-4 sm:flex-row sm:flex-wrap sm:items-end"
+          >
+            <div className="min-w-[160px]">
+              <label
+                htmlFor="monthKey"
+                className="mb-1 block text-sm font-medium text-[#3f4a3a] dark:text-[#c5cfb2]"
+              >
+                Mes
+              </label>
+              <input
+                id="monthKey"
+                name="monthKey"
+                type="month"
+                required
+                className="w-full rounded-lg border border-[#8b9678] bg-white px-3 py-2 text-sm text-[#232b21] outline-none ring-[#5b6a4a] transition focus:ring-2 dark:border-[#6b775d] dark:bg-[#1b241b] dark:text-[#e8e3d3]"
+              />
+            </div>
+            <div className="min-w-[140px]">
+              <label
+                htmlFor="amountEur"
+                className="mb-1 block text-sm font-medium text-[#3f4a3a] dark:text-[#c5cfb2]"
+              >
+                Valor (EUR)
+              </label>
+              <input
+                id="amountEur"
+                name="amountEur"
+                type="text"
+                inputMode="decimal"
+                required
+                placeholder="12,50"
+                className="w-full rounded-lg border border-[#8b9678] bg-white px-3 py-2 text-sm text-[#232b21] outline-none ring-[#5b6a4a] transition focus:ring-2 dark:border-[#6b775d] dark:bg-[#1b241b] dark:text-[#e8e3d3]"
+              />
+            </div>
+            <button
+              type="submit"
+              className="rounded-lg bg-[#2f3b2f] px-5 py-2.5 text-sm font-semibold text-[#f6f3e7] transition hover:bg-[#3b4a39] dark:bg-[#b7c29d] dark:text-[#1e251d] dark:hover:bg-[#cad3b3]"
+            >
+              Guardar cota
+            </button>
+          </form>
+
+          {quotas.length === 0 ? (
+            <p className="mt-4 rounded-lg border border-dashed border-[#9ba78a] bg-[#f5f1e4] p-4 text-sm text-[#4a5644] dark:border-[#738063] dark:bg-[#273126] dark:text-[#cdd6bd]">
+              Ainda nao ha cotas definidas. Regista o valor do mes acima.
+            </p>
+          ) : (
+            <div className="mt-4 overflow-x-auto rounded-xl border border-[#c4d1b3] dark:border-[#4f5a45]">
+              <table className="w-full min-w-[360px] text-left text-sm">
+                <thead className="bg-[#e8eadf] text-[#3d4a38] dark:bg-[#2a3528] dark:text-[#d5dfc4]">
+                  <tr>
+                    <th className="px-4 py-3 font-semibold">Mes</th>
+                    <th className="px-4 py-3 font-semibold">Valor</th>
+                    <th className="px-4 py-3 font-semibold">Registado</th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-[#d8e0cc] dark:divide-[#3d4a38]">
+                  {quotas.map((q) => (
+                    <tr
+                      key={q.id}
+                      className="bg-white/80 text-[#2f3a2d] dark:bg-[#1b241b]/80 dark:text-[#e8e3d3]"
+                    >
+                      <td className="px-4 py-3 font-mono text-sm tabular-nums">
+                        {q.monthKey}
+                      </td>
+                      <td className="px-4 py-3 tabular-nums">
+                        {eurFmt.format(q.amountCents / 100)}
+                      </td>
+                      <td className="px-4 py-3 tabular-nums text-[#4a5644] dark:text-[#c5cfb2]">
+                        {dateTimeFmt.format(q.createdAt)}
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          )}
+        </section>
+
+        <section className="mt-10 border-t border-dashed border-[#b5c4a3] pt-8 dark:border-[#4f5a45]">
+          <h2 className="text-lg font-semibold text-[#2f3a2d] dark:text-[#e8e3d3]">
             Novo utilizador
           </h2>
           <p className="mt-1 text-sm text-[#4a5644] dark:text-[#c5cfb2]">
@@ -81,7 +188,7 @@ export default async function AdminPage({ searchParams }: AdminPageProps) {
             no plano do MVP.
           </p>
 
-          {hasFormError ? (
+          {hasUserFormError ? (
             <p className="mt-4 rounded-md bg-red-100 p-3 text-sm text-red-800 dark:bg-red-950/30 dark:text-red-300">
               Preenche nome e data de entrada.
             </p>
