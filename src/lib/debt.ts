@@ -71,3 +71,54 @@ export async function computeDebtsForUsers(
 
   return result;
 }
+
+export type OwedMonthLine = { monthKey: string; amountCents: number };
+
+export async function computeOwedBreakdownForUser(userId: string) {
+  const user = await prisma.user.findUnique({
+    where: { id: userId },
+  });
+  if (!user) {
+    return null;
+  }
+
+  const start = monthKeyFromUtcDate(user.entryDate);
+  const end = currentMonthKeyUtc();
+
+  const [payments, quotas] = await Promise.all([
+    prisma.payment.findMany({
+      where: { userId },
+      select: { monthKey: true },
+    }),
+    prisma.monthlyQuota.findMany({
+      select: { monthKey: true, amountCents: true },
+    }),
+  ]);
+
+  const paid = new Set(payments.map((p) => p.monthKey));
+  const quotaByMonth = new Map(
+    quotas.map((q) => [q.monthKey, q.amountCents]),
+  );
+
+  const owedLines: OwedMonthLine[] = [];
+  const monthsWithoutQuota: string[] = [];
+
+  for (const mk of monthKeysInclusive(start, end)) {
+    if (paid.has(mk)) continue;
+    const q = quotaByMonth.get(mk);
+    if (q === undefined) {
+      monthsWithoutQuota.push(mk);
+      continue;
+    }
+    owedLines.push({ monthKey: mk, amountCents: q });
+  }
+
+  const totalOwedCents = owedLines.reduce((s, l) => s + l.amountCents, 0);
+
+  return {
+    user,
+    owedLines,
+    monthsWithoutQuota,
+    totalOwedCents,
+  };
+}

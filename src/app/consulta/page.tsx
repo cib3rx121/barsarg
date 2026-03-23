@@ -1,12 +1,25 @@
 import Link from "next/link";
 import { cookies } from "next/headers";
 import { redirect } from "next/navigation";
+import { computeDebtsForUsers } from "@/lib/debt";
+import { prisma } from "@/lib/prisma";
 
 type ConsultaPageProps = {
   searchParams: Promise<{
     error?: string;
   }>;
 };
+
+const eurFmt = new Intl.NumberFormat("pt-PT", {
+  style: "currency",
+  currency: "EUR",
+});
+
+const dateFmt = new Intl.DateTimeFormat("pt-PT", {
+  day: "2-digit",
+  month: "short",
+  year: "numeric",
+});
 
 export default async function ConsultaPage({ searchParams }: ConsultaPageProps) {
   const params = await searchParams;
@@ -93,9 +106,16 @@ export default async function ConsultaPage({ searchParams }: ConsultaPageProps) 
     );
   }
 
+  const users = await prisma.user.findMany({
+    where: { active: true },
+    orderBy: { name: "asc" },
+  });
+
+  const debtByUser = await computeDebtsForUsers(users);
+
   return (
-    <div className="flex min-h-screen items-center justify-center bg-[#f2efe2] px-4 dark:bg-[#1a2119]">
-      <main className="w-full max-w-xl rounded-2xl border border-[#7f8a6a] bg-[#fcfbf6] p-8 shadow-sm dark:border-[#647157] dark:bg-[#202a20]">
+    <div className="min-h-screen bg-[#f2efe2] px-4 py-10 dark:bg-[#1a2119]">
+      <main className="mx-auto w-full max-w-4xl rounded-2xl border border-[#7f8a6a] bg-[#fcfbf6] p-8 shadow-sm dark:border-[#647157] dark:bg-[#202a20]">
         <p className="text-xs font-semibold uppercase tracking-[0.2em] text-[#6f7d5a] dark:text-[#b7c29d]">
           Consulta da Tropa
         </p>
@@ -103,8 +123,10 @@ export default async function ConsultaPage({ searchParams }: ConsultaPageProps) 
           Situacao geral
         </h1>
         <p className="mt-2 text-sm text-[#4a5644] dark:text-[#c5cfb2]">
-          Entrada validada. Sem filmes: em breve mostramos a divida da malta.
+          Lista de utilizadores ativos e divida em falta. Clica no nome para ver
+          o detalhe por mes.
         </p>
+
         <div className="mt-6 flex flex-wrap gap-3">
           <Link
             href="/"
@@ -121,6 +143,64 @@ export default async function ConsultaPage({ searchParams }: ConsultaPageProps) 
             </button>
           </form>
         </div>
+
+        {users.length === 0 ? (
+          <p className="mt-8 rounded-lg border border-dashed border-[#9ba78a] bg-[#f5f1e4] p-4 text-sm text-[#4a5644] dark:border-[#738063] dark:bg-[#273126] dark:text-[#cdd6bd]">
+            Ainda nao ha utilizadores ativos na lista.
+          </p>
+        ) : (
+          <div className="mt-8 overflow-x-auto rounded-xl border border-[#c4d1b3] dark:border-[#4f5a45]">
+            <table className="w-full min-w-[560px] text-left text-sm">
+              <thead className="bg-[#e8eadf] text-[#3d4a38] dark:bg-[#2a3528] dark:text-[#d5dfc4]">
+                <tr>
+                  <th className="px-4 py-3 font-semibold">Nome</th>
+                  <th className="px-4 py-3 font-semibold">Entrada</th>
+                  <th className="px-4 py-3 font-semibold">Divida</th>
+                  <th className="px-4 py-3 font-semibold">Meses em falta</th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-[#d8e0cc] dark:divide-[#3d4a38]">
+                {users.map((u) => {
+                  const d = debtByUser.get(u.id);
+                  const noQuota = d?.monthsWithoutQuota.length
+                    ? `${d.monthsWithoutQuota.length} mes(es) sem cota`
+                    : null;
+                  return (
+                    <tr
+                      key={u.id}
+                      className="bg-white/80 text-[#2f3a2d] dark:bg-[#1b241b]/80 dark:text-[#e8e3d3]"
+                    >
+                      <td className="px-4 py-3 font-medium">
+                        <Link
+                          href={`/consulta/${u.id}`}
+                          className="text-[#2d4a22] underline decoration-[#7f8a6a] underline-offset-2 hover:text-[#1e251d] dark:text-[#c8e8bc] dark:hover:text-[#e8e3d3]"
+                        >
+                          {u.name}
+                        </Link>
+                      </td>
+                      <td className="px-4 py-3 tabular-nums text-[#4a5644] dark:text-[#c5cfb2]">
+                        {dateFmt.format(u.entryDate)}
+                      </td>
+                      <td className="px-4 py-3 tabular-nums font-medium">
+                        {d ? eurFmt.format(d.totalOwedCents / 100) : "—"}
+                      </td>
+                      <td className="px-4 py-3 text-[#4a5644] dark:text-[#c5cfb2]">
+                        <span className="tabular-nums">
+                          {d ? d.owedMonthCount : "—"}
+                        </span>
+                        {noQuota ? (
+                          <span className="mt-1 block text-xs text-amber-800 dark:text-amber-200">
+                            {noQuota}
+                          </span>
+                        ) : null}
+                      </td>
+                    </tr>
+                  );
+                })}
+              </tbody>
+            </table>
+          </div>
+        )}
       </main>
     </div>
   );
