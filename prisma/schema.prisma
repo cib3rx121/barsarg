@@ -13,13 +13,30 @@ datasource db {
 }
 
 model User {
-  id              String    @id @default(uuid()) @db.Uuid
+  id              String        @id @default(uuid()) @db.Uuid
   name            String
-  entryDate       DateTime  @db.Date
-  active          Boolean   @default(true)
-  publicTokenHash String    @unique
-  createdAt       DateTime  @default(now())
-  payments        Payment[]
+  entryDate       DateTime      @db.Date
+  /// Primeiro mes com cota; null = desde o mes civil da entrada.
+  chargeStartDate DateTime?     @db.Date
+  active          Boolean       @default(true)
+  publicTokenHash String        @unique
+  createdAt       DateTime      @default(now())
+  ledgerEntries   LedgerEntry[]
+  waivedMonths    WaivedMonth[]
+}
+
+/// Mes em que a pessoa nao deve cota (ex.: ausencia); remove a carga CHARGE_MONTH desse mes.
+model WaivedMonth {
+  id        String   @id @default(uuid()) @db.Uuid
+  userId    String   @db.Uuid
+  monthKey  String
+  note      String?
+  createdAt DateTime @default(now())
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, monthKey])
+  @@index([userId])
 }
 
 /// Um unico registo (id = "default"): valor mensal igual para todos os meses.
@@ -29,16 +46,17 @@ model QuotaSettings {
   updatedAt   DateTime @updatedAt
 }
 
-model Payment {
-  id          String   @id @default(uuid()) @db.Uuid
-  userId      String   @db.Uuid
-  monthKey    String
-  paidAt      DateTime @default(now())
-  amountCents Int
-  note        String?
+/// Saldo do utilizador = soma(deltaCents). Positivo = deve ao bar; negativo = credito.
+model LedgerEntry {
+  id         String   @id @default(uuid()) @db.Uuid
+  userId     String   @db.Uuid
+  deltaCents Int
+  kind       String
+  monthKey   String?
+  note       String?
+  createdAt  DateTime @default(now())
 
   user User @relation(fields: [userId], references: [id], onDelete: Cascade)
 
-  @@unique([userId, monthKey])
-  @@index([monthKey])
+  @@index([userId, createdAt])
 }

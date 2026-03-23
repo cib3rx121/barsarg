@@ -1,11 +1,23 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
-import { computeOwedBreakdownForUser } from "@/lib/debt";
+import {
+  backfillMissingMonthlyCharges,
+  computeBalanceDetailForUser,
+  ledgerKindLabel,
+} from "@/lib/balance";
 import { requireConsultaSession } from "@/lib/auth-consulta";
 
 const eurFmt = new Intl.NumberFormat("pt-PT", {
   style: "currency",
   currency: "EUR",
+});
+
+const dateTimeFmt = new Intl.DateTimeFormat("pt-PT", {
+  day: "2-digit",
+  month: "short",
+  year: "numeric",
+  hour: "2-digit",
+  minute: "2-digit",
 });
 
 type PageProps = {
@@ -14,20 +26,23 @@ type PageProps = {
 
 export default async function ConsultaUserDetailPage({ params }: PageProps) {
   await requireConsultaSession();
+  await backfillMissingMonthlyCharges();
 
   const { userId } = await params;
-  const data = await computeOwedBreakdownForUser(userId);
+  const data = await computeBalanceDetailForUser(userId);
   if (!data) {
     notFound();
   }
 
   const {
     user,
-    owedLines,
-    unpaidMonthsPendingQuota,
+    balanceCents,
+    estimatedMonthsEquivalent,
     quotaNotConfigured,
-    totalOwedCents,
+    ledgerEntries,
   } = data;
+
+  const b = balanceCents;
 
   return (
     <div className="min-h-screen bg-[#f2efe2] px-4 py-10 dark:bg-[#1a2119]">
@@ -36,68 +51,85 @@ export default async function ConsultaUserDetailPage({ params }: PageProps) {
           Consulta da Tropa
         </p>
         <h1 className="mt-2 text-2xl font-bold text-[#2f3a2d] dark:text-[#e8e3d3]">
-          Divida — {user.name}
+          Saldo — {user.name}
         </h1>
         <p className="mt-2 text-sm text-[#4a5644] dark:text-[#c5cfb2]">
-          Meses em falta desde a entrada ate ao mes atual. So leitura.
+          O saldo em euros e a referencia oficial. A coluna de meses e uma estimativa
+          com base na cota actual. So leitura.
         </p>
 
         <div className="mt-6 rounded-lg border border-[#c4d1b3] bg-[#f8f6ee] p-4 dark:border-[#4f5a45] dark:bg-[#273126]">
           <p className="text-sm text-[#4a5644] dark:text-[#c5cfb2]">
-            Total em falta
+            {b > 0
+              ? "Divida em falta"
+              : b < 0
+                ? "Crédito a favor"
+                : "Saldo"}
           </p>
           <p className="mt-1 text-2xl font-semibold tabular-nums text-[#2f3a2d] dark:text-[#e8e3d3]">
-            {eurFmt.format(totalOwedCents / 100)}
+            {b > 0
+              ? eurFmt.format(b / 100)
+              : b < 0
+                ? eurFmt.format((-b) / 100)
+                : eurFmt.format(0)}
           </p>
+          {!quotaNotConfigured && b > 0 ? (
+            <p className="mt-2 text-sm text-[#4a5644] dark:text-[#c5cfb2]">
+              Estimativa: ~{estimatedMonthsEquivalent} mes(es) de cota (referencia).
+            </p>
+          ) : null}
         </div>
 
         {quotaNotConfigured ? (
           <p className="mt-4 rounded-md bg-amber-100 p-3 text-sm text-amber-950 dark:bg-amber-950/30 dark:text-amber-100">
-            O comando ainda nao definiu o valor da cota mensal. O total so aparece
-            depois disso.
-            {unpaidMonthsPendingQuota.length > 0 ? (
-              <>
-                {" "}
-                Ha {unpaidMonthsPendingQuota.length} mes(es) por pagar desde a
-                entrada.
-              </>
-            ) : null}
+            O comando ainda nao definiu o valor da cota mensal. O saldo em euros
+            continua correcto; a estimativa de meses so aparece depois de definir a
+            cota.
           </p>
         ) : null}
 
-        {!quotaNotConfigured && owedLines.length === 0 ? (
+        {ledgerEntries.length === 0 ? (
           <p className="mt-6 text-sm text-[#4a5644] dark:text-[#c5cfb2]">
-            Nada em falta neste momento.
+            Ainda nao ha lancamentos.
           </p>
-        ) : null}
-
-        {!quotaNotConfigured && owedLines.length > 0 ? (
+        ) : (
           <div className="mt-6 overflow-x-auto rounded-xl border border-[#c4d1b3] dark:border-[#4f5a45]">
-            <table className="w-full min-w-[280px] text-left text-sm">
+            <table className="w-full min-w-[360px] text-left text-sm">
               <thead className="bg-[#e8eadf] text-[#3d4a38] dark:bg-[#2a3528] dark:text-[#d5dfc4]">
                 <tr>
+                  <th className="px-4 py-3 font-semibold">Data</th>
+                  <th className="px-4 py-3 font-semibold">Tipo</th>
                   <th className="px-4 py-3 font-semibold">Mes</th>
                   <th className="px-4 py-3 font-semibold">Valor</th>
+                  <th className="px-4 py-3 font-semibold">Nota</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-[#d8e0cc] dark:divide-[#3d4a38]">
-                {owedLines.map((row) => (
+                {ledgerEntries.map((row) => (
                   <tr
-                    key={row.monthKey}
+                    key={row.id}
                     className="bg-white/80 text-[#2f3a2d] dark:bg-[#1b241b]/80 dark:text-[#e8e3d3]"
                   >
+                    <td className="px-4 py-3 tabular-nums text-[#4a5644] dark:text-[#c5cfb2]">
+                      {dateTimeFmt.format(row.createdAt)}
+                    </td>
+                    <td className="px-4 py-3">{ledgerKindLabel(row.kind)}</td>
                     <td className="px-4 py-3 font-mono tabular-nums">
-                      {row.monthKey}
+                      {row.monthKey ?? "—"}
                     </td>
                     <td className="px-4 py-3 tabular-nums">
-                      {eurFmt.format(row.amountCents / 100)}
+                      {row.deltaCents > 0 ? "+" : ""}
+                      {eurFmt.format(row.deltaCents / 100)}
+                    </td>
+                    <td className="max-w-[140px] truncate px-4 py-3 text-[#4a5644] dark:text-[#c5cfb2]">
+                      {row.note ?? "—"}
                     </td>
                   </tr>
                 ))}
               </tbody>
             </table>
           </div>
-        ) : null}
+        )}
 
         <div className="mt-8">
           <Link

@@ -4,9 +4,14 @@ import { createHash, randomBytes } from "node:crypto";
 import { revalidatePath } from "next/cache";
 import { cookies } from "next/headers";
 import { redirect } from "next/navigation";
-import { parseMonthKey } from "@/lib/month-keys";
+import {
+  monthKeyFromUtcDate,
+  monthKeysInclusive,
+  parseMonthKey,
+} from "@/lib/month-keys";
+import { backfillMissingMonthlyCharges, reconcileUserCharges } from "@/lib/balance";
 import { prisma } from "@/lib/prisma";
-import { getGlobalQuotaCents, QUOTA_SETTINGS_ID } from "@/lib/quota";
+import { QUOTA_SETTINGS_ID } from "@/lib/quota";
 
 async function assertAdmin() {
   const session = (await cookies()).get("barsarg_admin_session")?.value;
@@ -39,18 +44,115 @@ export async function createUser(formData: FormData) {
     redirect("/admin?error=1");
   }
 
+  const chargeStartRaw = String(formData.get("chargeStartDate") ?? "").trim();
+  let chargeStartDate: Date | null = null;
+  if (chargeStartRaw) {
+    const parsed = parseEntryDate(chargeStartRaw);
+    if (!parsed) {
+      redirect("/admin?error=1");
+    }
+    const entryMk = monthKeyFromUtcDate(entryDate);
+    const chargeMk = monthKeyFromUtcDate(parsed);
+    if (chargeMk < entryMk) {
+      redirect("/admin?error=8");
+    }
+    chargeStartDate = parsed;
+  }
+
   const secret = randomBytes(32).toString("hex");
   const publicTokenHash = createHash("sha256").update(secret).digest("hex");
 
-  await prisma.user.create({
+  const user = await prisma.user.create({
     data: {
       name,
       entryDate,
       publicTokenHash,
+      chargeStartDate,
     },
   });
 
+  await reconcileUserCharges(user.id);
+
   revalidatePath("/admin");
+  redirect("/admin");
+}
+
+export async function updateUserChargeStart(formData: FormData) {
+  await assertAdmin();
+
+  const userId = String(formData.get("chargeStartUserId") ?? "").trim();
+  const raw = String(formData.get("chargeStartDateEdit") ?? "").trim();
+
+  if (!userId || !raw) {
+    redirect("/admin?error=7");
+  }
+
+  const parsed = parseEntryDate(raw);
+  if (!parsed) {
+    redirect("/admin?error=7");
+  }
+
+  const existing = await prisma.user.findUnique({
+    where: { id: userId },
+    select: { entryDate: true },
+  });
+  if (!existing) {
+    redirect("/admin?error=7");
+  }
+
+  const entryMk = monthKeyFromUtcDate(existing.entryDate);
+  const chargeMk = monthKeyFromUtcDate(parsed);
+  if (chargeMk < entryMk) {
+    redirect("/admin?error=8");
+  }
+
+  await prisma.user.update({
+    where: { id: userId },
+    data: { chargeStartDate: parsed },
+  });
+
+  await reconcileUserCharges(userId);
+
+  revalidatePath("/admin");
+  revalidatePath("/consulta");
+  redirect("/admin");
+}
+
+export async function waiveMonthRange(formData: FormData) {
+  await assertAdmin();
+
+  const userId = String(formData.get("waiveUserId") ?? "").trim();
+  const from = parseMonthKey(String(formData.get("waiveFromMonth") ?? ""));
+  const to = parseMonthKey(String(formData.get("waiveToMonth") ?? ""));
+  const noteRaw = String(formData.get("waiveNote") ?? "").trim();
+
+  if (!userId || !from || !to) {
+    redirect("/admin?error=7");
+  }
+
+  if (from > to) {
+    redirect("/admin?error=7");
+  }
+
+  const keys = monthKeysInclusive(from, to);
+  for (const monthKey of keys) {
+    await prisma.waivedMonth.upsert({
+      where: {
+        userId_monthKey: { userId, monthKey },
+      },
+      create: {
+        userId,
+        monthKey,
+        note: noteRaw ? noteRaw : null,
+      },
+      update: noteRaw ? { note: noteRaw } : {},
+    });
+  }
+
+  await reconcileUserCharges(userId);
+
+  revalidatePath("/admin");
+  revalidatePath("/consulta");
   redirect("/admin");
 }
 
@@ -80,6 +182,8 @@ export async function saveGlobalQuota(formData: FormData) {
     update: { amountCents },
   });
 
+  await backfillMissingMonthlyCharges();
+
   revalidatePath("/admin");
   revalidatePath("/consulta");
   redirect("/admin");
@@ -89,32 +193,27 @@ export async function recordPayment(formData: FormData) {
   await assertAdmin();
 
   const userId = String(formData.get("payUserId") ?? "").trim();
-  const monthKey = parseMonthKey(String(formData.get("payMonthKey") ?? ""));
+  const amountCents = parseAmountEurToCents(
+    String(formData.get("payAmountEur") ?? ""),
+  );
+  const monthRaw = String(formData.get("payMonthKey") ?? "").trim();
+  const monthKey = monthRaw ? parseMonthKey(monthRaw) : null;
   const noteRaw = String(formData.get("payNote") ?? "").trim();
 
-  if (!userId || !monthKey) {
+  if (!userId || amountCents === null || amountCents <= 0) {
     redirect("/admin?error=4");
   }
 
-  const globalCents = await getGlobalQuotaCents();
-  if (globalCents === null || globalCents <= 0) {
-    redirect("/admin?error=5");
+  if (monthRaw && !monthKey) {
+    redirect("/admin?error=4");
   }
 
-  const existing = await prisma.payment.findUnique({
-    where: {
-      userId_monthKey: { userId, monthKey },
-    },
-  });
-  if (existing) {
-    redirect("/admin?error=6");
-  }
-
-  await prisma.payment.create({
+  await prisma.ledgerEntry.create({
     data: {
       userId,
-      monthKey,
-      amountCents: globalCents,
+      deltaCents: -amountCents,
+      kind: "PAYMENT",
+      monthKey: monthKey ?? null,
       note: noteRaw ? noteRaw : null,
     },
   });

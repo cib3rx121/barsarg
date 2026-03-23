@@ -36,3 +36,12 @@ export function monthKeysInclusive(start: string, end: string): string[] {
   }
   return out;
 }
+
+/** Ex.: 2024-03 -> "março de 2024" */
+export function formatMonthKeyLongPt(mk: string): string {
+  const [y, m] = mk.split("-").map(Number);
+  return new Intl.DateTimeFormat("pt-PT", {
+    month: "long",
+    year: "numeric",
+  }).format(new Date(Date.UTC(y, m - 1, 1)));
+}

@@ -1,7 +1,10 @@
 import Link from "next/link";
 import { cookies } from "next/headers";
 import { redirect } from "next/navigation";
-import { computeDebtsForUsers } from "@/lib/debt";
+import {
+  backfillMissingMonthlyCharges,
+  computeBalancesForUsers,
+} from "@/lib/balance";
 import { prisma } from "@/lib/prisma";
 
 type ConsultaPageProps = {
@@ -106,12 +109,14 @@ export default async function ConsultaPage({ searchParams }: ConsultaPageProps) 
     );
   }
 
+  await backfillMissingMonthlyCharges();
+
   const users = await prisma.user.findMany({
     where: { active: true },
     orderBy: { name: "asc" },
   });
 
-  const debtByUser = await computeDebtsForUsers(users);
+  const balanceByUser = await computeBalancesForUsers(users);
 
   return (
     <div className="min-h-screen bg-[#f2efe2] px-4 py-10 dark:bg-[#1a2119]">
@@ -123,8 +128,8 @@ export default async function ConsultaPage({ searchParams }: ConsultaPageProps) 
           Situacao geral
         </h1>
         <p className="mt-2 text-sm text-[#4a5644] dark:text-[#c5cfb2]">
-          Lista de utilizadores ativos e divida em falta. Clica no nome para ver
-          o detalhe por mes.
+          Lista de utilizadores ativos e saldo (divida ou credito). Clica no nome para ver
+          o detalhe e o historico de lancamentos.
         </p>
 
         <div className="mt-6 flex flex-wrap gap-3">
@@ -155,15 +160,16 @@ export default async function ConsultaPage({ searchParams }: ConsultaPageProps) 
                 <tr>
                   <th className="px-4 py-3 font-semibold">Nome</th>
                   <th className="px-4 py-3 font-semibold">Entrada</th>
-                  <th className="px-4 py-3 font-semibold">Divida</th>
-                  <th className="px-4 py-3 font-semibold">Meses em falta</th>
+                  <th className="px-4 py-3 font-semibold">Saldo</th>
+                  <th className="px-4 py-3 font-semibold">Meses (estim.)</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-[#d8e0cc] dark:divide-[#3d4a38]">
                 {users.map((u) => {
-                  const d = debtByUser.get(u.id);
+                  const d = balanceByUser.get(u.id);
+                  const b = d?.balanceCents ?? 0;
                   const noQuotaCfg = d?.quotaNotConfigured
-                    ? "Cota ainda nao definida pelo comando"
+                    ? "Cota ainda nao definida — meses estimados indisponiveis."
                     : null;
                   return (
                     <tr
@@ -182,13 +188,21 @@ export default async function ConsultaPage({ searchParams }: ConsultaPageProps) 
                         {dateFmt.format(u.entryDate)}
                       </td>
                       <td className="px-4 py-3 tabular-nums font-medium">
-                        {d && !d.quotaNotConfigured
-                          ? eurFmt.format(d.totalOwedCents / 100)
-                          : "—"}
+                        {b > 0 ? (
+                          eurFmt.format(b / 100)
+                        ) : b < 0 ? (
+                          <span className="text-[#1d5c38] dark:text-[#8fd4a8]">
+                            Crédito {eurFmt.format((-b) / 100)}
+                          </span>
+                        ) : (
+                          eurFmt.format(0)
+                        )}
                       </td>
                       <td className="px-4 py-3 text-[#4a5644] dark:text-[#c5cfb2]">
                         <span className="tabular-nums">
-                          {d ? d.owedMonthCount : "—"}
+                          {d && !d.quotaNotConfigured
+                            ? d.estimatedMonthsEquivalent
+                            : "—"}
                         </span>
                         {noQuotaCfg ? (
                           <span className="mt-1 block text-xs text-amber-800 dark:text-amber-200">

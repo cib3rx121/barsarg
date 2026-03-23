@@ -1,8 +1,19 @@
 import Link from "next/link";
 import { cookies } from "next/headers";
 import { redirect } from "next/navigation";
-import { createUser, recordPayment, saveGlobalQuota } from "./actions";
-import { computeDebtsForUsers } from "@/lib/debt";
+import {
+  createUser,
+  recordPayment,
+  saveGlobalQuota,
+  updateUserChargeStart,
+  waiveMonthRange,
+} from "./actions";
+import {
+  backfillMissingMonthlyCharges,
+  computeBalancesForUsers,
+  firstChargeMonthKey,
+} from "@/lib/balance";
+import { formatMonthKeyLongPt } from "@/lib/month-keys";
 import { requireAdminSession } from "@/lib/auth-admin";
 import { prisma } from "@/lib/prisma";
 import { QUOTA_SETTINGS_ID } from "@/lib/quota";
@@ -39,19 +50,19 @@ const sectionClass = "scroll-mt-28";
 
 export default async function AdminPage({ searchParams }: AdminPageProps) {
   await requireAdminSession();
+  await backfillMissingMonthlyCharges();
 
   const params = await searchParams;
   const hasUserFormError = params.error === "1";
   const hasQuotaFormError = params.error === "2";
+  const billingErr = params.error;
+  const hasChargeStartBeforeEntry = billingErr === "8";
+  const hasBillingFormError = billingErr === "7";
   const payErr = params.error;
   const payErrorMessage =
     payErr === "4"
-      ? "Escolhe utilizador e mes do pagamento."
-      : payErr === "5"
-        ? "Primeiro define o valor da cota mensal (secao Cota)."
-        : payErr === "6"
-          ? "Esse utilizador ja tem pagamento registado para esse mes."
-          : null;
+      ? "Escolhe utilizador, indica o valor pago (EUR) e, se preencheres o mes, usa o formato AAAA-MM."
+      : null;
 
   const [users, quotaRow] = await Promise.all([
     prisma.user.findMany({
@@ -62,7 +73,7 @@ export default async function AdminPage({ searchParams }: AdminPageProps) {
     }),
   ]);
 
-  const debtByUser = await computeDebtsForUsers(users);
+  const balanceByUser = await computeBalancesForUsers(users);
 
   const quotaDefaultDisplay = quotaRow
     ? (quotaRow.amountCents / 100).toFixed(2).replace(".", ",")
@@ -88,7 +99,8 @@ export default async function AdminPage({ searchParams }: AdminPageProps) {
           <p className="mt-2 text-sm leading-relaxed text-[#4a5644] dark:text-[#c5cfb2]">
             Tres passos: define a <strong className="font-semibold">cota</strong>, gere a{" "}
             <strong className="font-semibold">malta</strong>, regista{" "}
-            <strong className="font-semibold">pagamentos</strong>.
+            <strong className="font-semibold">pagamentos</strong> (o saldo em euros e a
+            referencia; os meses sao uma estimativa).
           </p>
           <div className="mt-5 flex flex-wrap gap-2">
             <Link href="/" className={navLinkClass}>
@@ -118,6 +130,9 @@ export default async function AdminPage({ searchParams }: AdminPageProps) {
           <a href="#pagamentos" className={navLinkClass}>
             3. Pagamentos
           </a>
+          <a href="#ausencias" className={navLinkClass}>
+            4. Ausencias
+          </a>
         </nav>
 
         {/* 1. Cota unica */}
@@ -129,9 +144,9 @@ export default async function AdminPage({ searchParams }: AdminPageProps) {
             Cota mensal
           </h2>
           <p className="mt-2 text-sm leading-relaxed text-[#4a5644] dark:text-[#c5cfb2]">
-            Um unico valor em euros aplica-se a <strong>todos</strong> os meses. Podes
-            alterar quando quiseres; a divida em falta passa a usar sempre o valor
-            atual.
+            Um unico valor em euros aplica-se a <strong>todos</strong> os meses (cargas
+            mensais e estimativa de &quot;meses em falta&quot;). O saldo real vem dos
+            lancamentos.
           </p>
 
           {quotaRow ? (
@@ -195,13 +210,24 @@ export default async function AdminPage({ searchParams }: AdminPageProps) {
             Malta
           </h2>
           <p className="mt-2 text-sm text-[#4a5644] dark:text-[#c5cfb2]">
-            Adiciona cada pessoa e a data em que entrou (a divida conta desde esse
-            mes).
+            Adiciona cada pessoa, a data em que entrou e, se for preciso, a partir de que
+            data deve comecar a pagar cota (por defeito: o mes da entrada). As cargas
+            mensais alinham-se com a cota definida em 1.
           </p>
 
           {hasUserFormError ? (
             <p className="mt-4 rounded-md bg-red-100 p-3 text-sm text-red-800 dark:bg-red-950/30 dark:text-red-300">
               Preenche nome e data de entrada.
+            </p>
+          ) : null}
+          {hasChargeStartBeforeEntry ? (
+            <p className="mt-4 rounded-md bg-red-100 p-3 text-sm text-red-800 dark:bg-red-950/30 dark:text-red-300">
+              A primeira cobranca nao pode ser antes do mes da entrada.
+            </p>
+          ) : null}
+          {hasBillingFormError ? (
+            <p className="mt-4 rounded-md bg-red-100 p-3 text-sm text-red-800 dark:bg-red-950/30 dark:text-red-300">
+              Verifica utilizador, meses (inicio antes ou igual ao fim) e formatos.
             </p>
           ) : null}
 
@@ -240,6 +266,23 @@ export default async function AdminPage({ searchParams }: AdminPageProps) {
                 className="w-full rounded-lg border border-[#8b9678] bg-white px-3 py-2 text-sm text-[#232b21] outline-none ring-[#5b6a4a] transition focus:ring-2 dark:border-[#6b775d] dark:bg-[#1b241b] dark:text-[#e8e3d3]"
               />
             </div>
+            <div className="min-w-[200px]">
+              <label
+                htmlFor="chargeStartDate"
+                className="mb-1 block text-sm font-medium text-[#3f4a3a] dark:text-[#c5cfb2]"
+              >
+                Primeira cobranca (opcional)
+              </label>
+              <input
+                id="chargeStartDate"
+                name="chargeStartDate"
+                type="date"
+                className="w-full rounded-lg border border-[#8b9678] bg-white px-3 py-2 text-sm text-[#232b21] outline-none ring-[#5b6a4a] transition focus:ring-2 dark:border-[#6b775d] dark:bg-[#1b241b] dark:text-[#e8e3d3]"
+              />
+              <p className="mt-1 text-xs text-[#6f7d5a] dark:text-[#8a9578]">
+                Vazio = desde o mes da entrada
+              </p>
+            </div>
             <button
               type="submit"
               className="rounded-lg bg-[#2f3b2f] px-5 py-2.5 text-sm font-semibold text-[#f6f3e7] transition hover:bg-[#3b4a39] dark:bg-[#b7c29d] dark:text-[#1e251d] dark:hover:bg-[#cad3b3]"
@@ -254,22 +297,24 @@ export default async function AdminPage({ searchParams }: AdminPageProps) {
             </p>
           ) : (
             <div className="mt-6 overflow-x-auto rounded-xl border border-[#c4d1b3] dark:border-[#4f5a45]">
-              <table className="w-full min-w-[680px] text-left text-sm">
+              <table className="w-full min-w-[820px] text-left text-sm">
                 <thead className="bg-[#e8eadf] text-[#3d4a38] dark:bg-[#2a3528] dark:text-[#d5dfc4]">
                   <tr>
                     <th className="px-4 py-3 font-semibold">Nome</th>
                     <th className="px-4 py-3 font-semibold">Entrada</th>
-                    <th className="px-4 py-3 font-semibold">Divida</th>
-                    <th className="px-4 py-3 font-semibold">Em falta</th>
+                    <th className="px-4 py-3 font-semibold">Cota desde</th>
+                    <th className="px-4 py-3 font-semibold">Saldo</th>
+                    <th className="px-4 py-3 font-semibold">Meses (estim.)</th>
                     <th className="px-4 py-3 font-semibold">Estado</th>
                     <th className="px-4 py-3 font-semibold">Registado</th>
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-[#d8e0cc] dark:divide-[#3d4a38]">
                   {users.map((u) => {
-                    const d = debtByUser.get(u.id);
+                    const d = balanceByUser.get(u.id);
+                    const b = d?.balanceCents ?? 0;
                     const warn = d?.quotaNotConfigured
-                      ? "Define a cota em 1."
+                      ? "Define a cota em 1 para estimar meses."
                       : null;
                     return (
                       <tr
@@ -280,16 +325,30 @@ export default async function AdminPage({ searchParams }: AdminPageProps) {
                         <td className="px-4 py-3 tabular-nums text-[#4a5644] dark:text-[#c5cfb2]">
                           {dateFmt.format(u.entryDate)}
                         </td>
+                        <td className="px-4 py-3 text-[#4a5644] dark:text-[#c5cfb2]">
+                          {formatMonthKeyLongPt(
+                            firstChargeMonthKey({
+                              entryDate: u.entryDate,
+                              chargeStartDate: u.chargeStartDate,
+                            }),
+                          )}
+                        </td>
                         <td className="px-4 py-3 tabular-nums font-medium">
-                          {d && !d.quotaNotConfigured
-                            ? eurFmt.format(d.totalOwedCents / 100)
-                            : d?.quotaNotConfigured
-                              ? "—"
-                              : "—"}
+                          {b > 0 ? (
+                            eurFmt.format(b / 100)
+                          ) : b < 0 ? (
+                            <span className="text-[#1d5c38] dark:text-[#8fd4a8]">
+                              Crédito {eurFmt.format((-b) / 100)}
+                            </span>
+                          ) : (
+                            eurFmt.format(0)
+                          )}
                         </td>
                         <td className="px-4 py-3 text-[#4a5644] dark:text-[#c5cfb2]">
                           <span className="tabular-nums">
-                            {d ? d.owedMonthCount : "—"}
+                            {d && !d.quotaNotConfigured
+                              ? d.estimatedMonthsEquivalent
+                              : "—"}
                           </span>
                           {warn ? (
                             <span className="mt-1 block text-xs text-amber-800 dark:text-amber-200">
@@ -318,6 +377,161 @@ export default async function AdminPage({ searchParams }: AdminPageProps) {
               </table>
             </div>
           )}
+
+          <div
+            id="ausencias"
+            className={`${sectionClass} mt-10 rounded-xl border border-dashed border-[#9ba78a] bg-[#f8f6ee]/80 p-5 dark:border-[#738063] dark:bg-[#273126]/50`}
+          >
+            <h3 className="text-base font-semibold text-[#2f3a2d] dark:text-[#e8e3d3]">
+              Ausencias — isentar meses
+            </h3>
+            <p className="mt-2 text-sm text-[#4a5644] dark:text-[#c5cfb2]">
+              Se alguem estiver ausente durante um periodo, indica o intervalo de meses
+              (inclusive). Esses meses deixam de ter carga de cota; o saldo actualiza-se
+              na hora.
+            </p>
+
+            {users.length === 0 ? (
+              <p className="mt-3 text-sm text-[#4a5644] dark:text-[#c5cfb2]">
+                Adiciona primeiro pessoas acima.
+              </p>
+            ) : (
+              <form
+                action={waiveMonthRange}
+                className="mt-4 flex flex-col gap-4 lg:flex-row lg:flex-wrap lg:items-end"
+              >
+                <div className="min-w-[200px] flex-1">
+                  <label
+                    htmlFor="waiveUserId"
+                    className="mb-1 block text-sm font-medium text-[#3f4a3a] dark:text-[#c5cfb2]"
+                  >
+                    Quem
+                  </label>
+                  <select
+                    id="waiveUserId"
+                    name="waiveUserId"
+                    required
+                    className="w-full rounded-lg border border-[#8b9678] bg-white px-3 py-2 text-sm text-[#232b21] outline-none ring-[#5b6a4a] transition focus:ring-2 dark:border-[#6b775d] dark:bg-[#1b241b] dark:text-[#e8e3d3]"
+                  >
+                    <option value="">Escolher…</option>
+                    {users.map((u) => (
+                      <option key={u.id} value={u.id}>
+                        {u.name}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+                <div className="min-w-[150px]">
+                  <label
+                    htmlFor="waiveFromMonth"
+                    className="mb-1 block text-sm font-medium text-[#3f4a3a] dark:text-[#c5cfb2]"
+                  >
+                    Mes inicial
+                  </label>
+                  <input
+                    id="waiveFromMonth"
+                    name="waiveFromMonth"
+                    type="month"
+                    required
+                    className="w-full rounded-lg border border-[#8b9678] bg-white px-3 py-2 text-sm text-[#232b21] outline-none ring-[#5b6a4a] transition focus:ring-2 dark:border-[#6b775d] dark:bg-[#1b241b] dark:text-[#e8e3d3]"
+                  />
+                </div>
+                <div className="min-w-[150px]">
+                  <label
+                    htmlFor="waiveToMonth"
+                    className="mb-1 block text-sm font-medium text-[#3f4a3a] dark:text-[#c5cfb2]"
+                  >
+                    Mes final
+                  </label>
+                  <input
+                    id="waiveToMonth"
+                    name="waiveToMonth"
+                    type="month"
+                    required
+                    className="w-full rounded-lg border border-[#8b9678] bg-white px-3 py-2 text-sm text-[#232b21] outline-none ring-[#5b6a4a] transition focus:ring-2 dark:border-[#6b775d] dark:bg-[#1b241b] dark:text-[#e8e3d3]"
+                  />
+                </div>
+                <div className="min-w-[200px] flex-1">
+                  <label
+                    htmlFor="waiveNote"
+                    className="mb-1 block text-sm font-medium text-[#3f4a3a] dark:text-[#c5cfb2]"
+                  >
+                    Nota (opcional)
+                  </label>
+                  <input
+                    id="waiveNote"
+                    name="waiveNote"
+                    type="text"
+                    placeholder="Ex.: ferias, missao"
+                    className="w-full rounded-lg border border-[#8b9678] bg-white px-3 py-2 text-sm text-[#232b21] outline-none ring-[#5b6a4a] transition focus:ring-2 dark:border-[#6b775d] dark:bg-[#1b241b] dark:text-[#e8e3d3]"
+                  />
+                </div>
+                <button
+                  type="submit"
+                  className="rounded-lg bg-[#4a5a42] px-5 py-2.5 text-sm font-semibold text-[#f6f3e7] transition hover:bg-[#5a6b52] dark:bg-[#5a6b52] dark:hover:bg-[#6a7c62]"
+                >
+                  Isentar meses
+                </button>
+              </form>
+            )}
+
+            <h4 className="mt-8 text-sm font-semibold text-[#2f3a2d] dark:text-[#e8e3d3]">
+              Membro ja na lista: mudar inicio da cobranca
+            </h4>
+            <p className="mt-1 text-sm text-[#4a5644] dark:text-[#c5cfb2]">
+              Ajusta a data a partir da qual as cotas mensais devem contar (nao pode ser
+              antes do mes da entrada). O saldo e as cargas sao recalculados.
+            </p>
+            {users.length === 0 ? null : (
+              <form
+                action={updateUserChargeStart}
+                className="mt-4 flex flex-col gap-4 sm:flex-row sm:flex-wrap sm:items-end"
+              >
+                <div className="min-w-[200px] flex-1">
+                  <label
+                    htmlFor="chargeStartUserId"
+                    className="mb-1 block text-sm font-medium text-[#3f4a3a] dark:text-[#c5cfb2]"
+                  >
+                    Pessoa
+                  </label>
+                  <select
+                    id="chargeStartUserId"
+                    name="chargeStartUserId"
+                    required
+                    className="w-full rounded-lg border border-[#8b9678] bg-white px-3 py-2 text-sm text-[#232b21] outline-none ring-[#5b6a4a] transition focus:ring-2 dark:border-[#6b775d] dark:bg-[#1b241b] dark:text-[#e8e3d3]"
+                  >
+                    <option value="">Escolher…</option>
+                    {users.map((u) => (
+                      <option key={u.id} value={u.id}>
+                        {u.name}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+                <div className="min-w-[200px]">
+                  <label
+                    htmlFor="chargeStartDateEdit"
+                    className="mb-1 block text-sm font-medium text-[#3f4a3a] dark:text-[#c5cfb2]"
+                  >
+                    Primeira cobranca
+                  </label>
+                  <input
+                    id="chargeStartDateEdit"
+                    name="chargeStartDateEdit"
+                    type="date"
+                    required
+                    className="w-full rounded-lg border border-[#8b9678] bg-white px-3 py-2 text-sm text-[#232b21] outline-none ring-[#5b6a4a] transition focus:ring-2 dark:border-[#6b775d] dark:bg-[#1b241b] dark:text-[#e8e3d3]"
+                  />
+                </div>
+                <button
+                  type="submit"
+                  className="rounded-lg border border-[#8b9678] bg-[#ece8da] px-5 py-2.5 text-sm font-semibold text-[#2f3a2d] transition hover:bg-[#e0dccf] dark:border-[#6b775d] dark:bg-[#3a4538] dark:text-[#e8e3d3] dark:hover:bg-[#4a5548]"
+                >
+                  Actualizar inicio
+                </button>
+              </form>
+            )}
+          </div>
         </section>
 
         {/* 3. Pagamentos */}
@@ -329,8 +543,8 @@ export default async function AdminPage({ searchParams }: AdminPageProps) {
             Pagamentos
           </h2>
           <p className="mt-2 text-sm text-[#4a5644] dark:text-[#c5cfb2]">
-            Quando alguem pagar na vida real, regista aqui quem pagou e de que mes e
-            a cota actual e gravada automaticamente.
+            Regista o valor em euros (parcial ou total). O saldo diminui em conformidade.
+            O mes e opcional — serve apenas de referencia no historico.
           </p>
 
           {payErrorMessage ? (
@@ -369,18 +583,34 @@ export default async function AdminPage({ searchParams }: AdminPageProps) {
                   ))}
                 </select>
               </div>
+              <div className="min-w-[140px]">
+                <label
+                  htmlFor="payAmountEur"
+                  className="mb-1 block text-sm font-medium text-[#3f4a3a] dark:text-[#c5cfb2]"
+                >
+                  Valor (EUR)
+                </label>
+                <input
+                  id="payAmountEur"
+                  name="payAmountEur"
+                  type="text"
+                  inputMode="decimal"
+                  required
+                  placeholder="12,50"
+                  className="w-full rounded-lg border border-[#8b9678] bg-white px-3 py-2 text-sm text-[#232b21] outline-none ring-[#5b6a4a] transition focus:ring-2 dark:border-[#6b775d] dark:bg-[#1b241b] dark:text-[#e8e3d3]"
+                />
+              </div>
               <div className="min-w-[160px]">
                 <label
                   htmlFor="payMonthKey"
                   className="mb-1 block text-sm font-medium text-[#3f4a3a] dark:text-[#c5cfb2]"
                 >
-                  Mes pago
+                  Mes (opcional)
                 </label>
                 <input
                   id="payMonthKey"
                   name="payMonthKey"
                   type="month"
-                  required
                   className="w-full rounded-lg border border-[#8b9678] bg-white px-3 py-2 text-sm text-[#232b21] outline-none ring-[#5b6a4a] transition focus:ring-2 dark:border-[#6b775d] dark:bg-[#1b241b] dark:text-[#e8e3d3]"
                 />
               </div>
