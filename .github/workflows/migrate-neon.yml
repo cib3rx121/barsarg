@@ -1,0 +1,29 @@
+# Aplica migracoes pendentes na base Neon (Prisma migrate deploy).
+# Util quando nao tens Node na rede corporativa: GitHub → Actions → este workflow → Run workflow.
+#
+# Antes: em Repo → Settings → Secrets → Actions, cria o secret DATABASE_URL com a connection
+# string DIRECTA da Neon (a Neon recomenda direct para migracoes, nao pooled).
+name: DB migrate (Neon)
+
+on:
+  workflow_dispatch:
+
+jobs:
+  migrate:
+    runs-on: ubuntu-latest
+    env:
+      DATABASE_URL: ${{ secrets.DATABASE_URL }}
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+          cache: npm
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Prisma migrate deploy
+        run: npx prisma migrate deploy

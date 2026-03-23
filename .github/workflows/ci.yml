@@ -1,0 +1,37 @@
+# Corre na nuvem (GitHub Actions) — util para quem nao tem Node na rede corporativa.
+name: CI
+
+on:
+  push:
+    branches: [main, master]
+  pull_request:
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    env:
+      # Prisma generate + Next build nao precisam de Postgres real; so precisam de URL valida.
+      DATABASE_URL: postgresql://ci:ci@127.0.0.1:5432/ci?schema=public
+      ADMIN_USERNAME: ci
+      ADMIN_PASSWORD: ci
+      PUBLIC_CONSULT_PIN: "0000"
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+          cache: npm
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Generate Prisma Client
+        run: npx prisma generate
+
+      - name: Lint
+        run: npm run lint
+
+      - name: Build
+        run: npm run build
