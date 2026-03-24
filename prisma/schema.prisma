@@ -23,6 +23,8 @@ model User {
   createdAt       DateTime      @default(now())
   ledgerEntries   LedgerEntry[]
   waivedMonths    WaivedMonth[]
+  eventParticipations EventParticipant[]
+  eventCharges    EventCharge[]
 }
 
 /// Mês em que a pessoa não deve cota (ex.: ausência); remove a carga CHARGE_MONTH desse mês.
