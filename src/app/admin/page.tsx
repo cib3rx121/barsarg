@@ -63,6 +63,8 @@ const linkSubtle =
 const sectionClass = "scroll-mt-24";
 const detailsSummary =
   "flex cursor-pointer list-none items-center justify-between rounded-xl border border-slate-200/80 bg-slate-50/80 px-4 py-3 text-sm font-semibold text-slate-800 transition hover:bg-slate-100 dark:border-slate-700/80 dark:bg-slate-800/40 dark:text-slate-100 dark:hover:bg-slate-800";
+const mobileNavBtn =
+  "inline-flex min-h-11 items-center justify-center rounded-lg border border-slate-200 bg-white px-3 py-2 text-xs font-semibold text-slate-700 dark:border-slate-600 dark:bg-slate-800 dark:text-slate-100";
 
 export default async function AdminPage({ searchParams }: AdminPageProps) {
   await requireAdminSession();
@@ -196,17 +198,47 @@ export default async function AdminPage({ searchParams }: AdminPageProps) {
           </div>
         </header>
 
-        <nav
-          className="admin-panel-section mt-6 flex flex-wrap items-center gap-x-3 gap-y-1 text-sm"
-          aria-label="Atalhos"
-        >
-          <a href="#definicoes" className={linkSubtle}>
-            Mensalidade e QR
-          </a>
-          <span className="text-slate-300 dark:text-slate-600">·</span>
-          <a href="#associados" className={linkSubtle}>
-            Associados
-          </a>
+        <nav className="admin-panel-section mt-6" aria-label="Atalhos">
+          <div className="hidden flex-wrap items-center gap-x-3 gap-y-1 text-sm md:flex">
+            <a href="#definicoes" className={linkSubtle}>
+              Mensalidade e QR
+            </a>
+            <span className="text-slate-300 dark:text-slate-600">·</span>
+            <a href="#auditoria" className={linkSubtle}>
+              Histórico
+            </a>
+            <span className="text-slate-300 dark:text-slate-600">·</span>
+            <a href="#seguranca" className={linkSubtle}>
+              Segurança
+            </a>
+            <span className="text-slate-300 dark:text-slate-600">·</span>
+            <a href="#associados" className={linkSubtle}>
+              Associados
+            </a>
+          </div>
+
+          <details className="md:hidden">
+            <summary className={detailsSummary}>
+              Menu rápido
+              <span className="text-xs font-medium text-slate-500 dark:text-slate-400">
+                Mobile
+              </span>
+            </summary>
+            <div className="mt-3 grid grid-cols-2 gap-2">
+              <a href="#definicoes" className={mobileNavBtn}>
+                Mensalidade/QR
+              </a>
+              <a href="#auditoria" className={mobileNavBtn}>
+                Histórico
+              </a>
+              <a href="#seguranca" className={mobileNavBtn}>
+                Segurança
+              </a>
+              <a href="#associados" className={mobileNavBtn}>
+                Associados
+              </a>
+            </div>
+          </details>
         </nav>
 
         <section className="admin-panel-section mt-6 grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
@@ -343,7 +375,7 @@ export default async function AdminPage({ searchParams }: AdminPageProps) {
           </div>
         </section>
 
-        <section className={`admin-panel-section mt-6 ${card}`}>
+        <section id="auditoria" className={`admin-panel-section mt-6 scroll-mt-24 ${card}`}>
           <details>
             <summary className={detailsSummary}>
               Histórico (audit log)
@@ -381,7 +413,10 @@ export default async function AdminPage({ searchParams }: AdminPageProps) {
           </details>
         </section>
 
-        <section className={`admin-panel-section mt-6 grid gap-6 lg:grid-cols-2`}>
+        <section
+          id="seguranca"
+          className={`admin-panel-section mt-6 scroll-mt-24 grid gap-6 lg:grid-cols-2`}
+        >
           <div className={card}>
             <details>
               <summary className={detailsSummary}>Segurança de acesso</summary>
@@ -580,6 +615,23 @@ export default async function AdminPage({ searchParams }: AdminPageProps) {
             <AdminAssociatesWorkspace members={serializedMembers} />
           </div>
         </section>
+      </div>
+
+      <div className="fixed inset-x-0 bottom-0 z-40 border-t border-slate-200/80 bg-white/95 px-3 py-2 backdrop-blur md:hidden dark:border-slate-700/80 dark:bg-slate-900/95">
+        <div className="mx-auto grid max-w-5xl grid-cols-4 gap-2">
+          <a href="#definicoes" className={mobileNavBtn}>
+            QR/Cota
+          </a>
+          <a href="#auditoria" className={mobileNavBtn}>
+            Histórico
+          </a>
+          <a href="#seguranca" className={mobileNavBtn}>
+            Segurança
+          </a>
+          <a href="#associados" className={mobileNavBtn}>
+            Associados
+          </a>
+        </div>
       </div>
     </div>
   );
