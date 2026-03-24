@@ -79,6 +79,7 @@ export function MonthYearField({
   }, [defaultValue]);
 
   const hiddenValue = year && month ? `${year}-${month}` : "";
+  const monthLabel = MONTH_OPTIONS.find((m) => m.value === month)?.label;
 
   return (
     <div className="space-y-2">
@@ -113,7 +114,7 @@ export function MonthYearField({
           ))}
         </select>
       </div>
-      <div className="flex gap-2">
+      <div className="flex flex-wrap items-center gap-2">
         <button
           type="button"
           className="rounded-lg border border-slate-200 px-2.5 py-1 text-xs font-medium text-slate-600 transition hover:bg-slate-50 dark:border-slate-600 dark:text-slate-300 dark:hover:bg-slate-800"
@@ -136,6 +137,9 @@ export function MonthYearField({
             Limpar
           </button>
         ) : null}
+        <span className="ml-auto rounded-md bg-slate-100 px-2 py-1 text-[11px] font-medium text-slate-600 dark:bg-slate-800 dark:text-slate-300">
+          {hiddenValue ? `${monthLabel} ${year}` : "Sem mês selecionado"}
+        </span>
       </div>
     </div>
   );

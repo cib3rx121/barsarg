@@ -47,6 +47,9 @@ const btnDanger =
 const sectionTitle =
   "text-xs font-semibold uppercase tracking-wide text-slate-500 dark:text-slate-400";
 
+const sectionCard =
+  "rounded-2xl border border-slate-200/80 bg-slate-50/60 p-4 dark:border-slate-700/80 dark:bg-slate-800/30";
+
 export function AdminAssociatesWorkspace({
   members,
 }: {
@@ -327,7 +330,12 @@ export function AdminAssociatesWorkspace({
               className="min-h-0 flex-1 overflow-y-auto overflow-x-hidden overscroll-y-contain px-4 pb-[max(6rem,env(safe-area-inset-bottom,0px)+3rem)] pt-4 sm:px-5 sm:pb-8 sm:pt-5"
               style={{ WebkitOverflowScrolling: "touch" }}
             >
-              <p className={sectionTitle}>Dados do associado</p>
+              <div className={sectionCard}>
+                <p className={sectionTitle}>Dados do associado</p>
+                <p className="mt-1 text-xs text-slate-500 dark:text-slate-400">
+                  Edite nome e meses de forma simples. O mês da cobrança não pode ser
+                  anterior ao mês de entrada.
+                </p>
               <form
                 key={`edit-${selected.id}`}
                 action={updateMember}
@@ -346,38 +354,41 @@ export function AdminAssociatesWorkspace({
                     className={inpt}
                   />
                 </div>
-                <div>
-                  <label className="mb-1 block text-sm font-medium text-slate-700 dark:text-slate-300">
-                    Mês de entrada
-                  </label>
-                  <MonthYearField
-                    idPrefix={`edit-entry-${selected.id}`}
-                    name="entryDate"
-                    required
-                    defaultValue={selected.entryMonth}
-                    className={inpt}
-                    yearStart={currentYear - 8}
-                    yearEnd={currentYear + 4}
-                  />
-                </div>
-                <div>
-                  <label className="mb-1 block text-sm font-medium text-slate-700 dark:text-slate-300">
-                    Mês de início da cobrança (opcional)
-                  </label>
-                  <MonthYearField
-                    idPrefix={`edit-charge-${selected.id}`}
-                    name="chargeStartDate"
-                    allowEmpty
-                    defaultValue={selected.chargeStartMonth ?? ""}
-                    className={inpt}
-                    yearStart={currentYear - 8}
-                    yearEnd={currentYear + 4}
-                  />
+                <div className="grid gap-3 sm:grid-cols-2">
+                  <div>
+                    <label className="mb-1 block text-sm font-medium text-slate-700 dark:text-slate-300">
+                      Mês de entrada
+                    </label>
+                    <MonthYearField
+                      idPrefix={`edit-entry-${selected.id}`}
+                      name="entryDate"
+                      required
+                      defaultValue={selected.entryMonth}
+                      className={inpt}
+                      yearStart={currentYear - 8}
+                      yearEnd={currentYear + 4}
+                    />
+                  </div>
+                  <div>
+                    <label className="mb-1 block text-sm font-medium text-slate-700 dark:text-slate-300">
+                      Início da cobrança (opcional)
+                    </label>
+                    <MonthYearField
+                      idPrefix={`edit-charge-${selected.id}`}
+                      name="chargeStartDate"
+                      allowEmpty
+                      defaultValue={selected.chargeStartMonth ?? ""}
+                      className={inpt}
+                      yearStart={currentYear - 8}
+                      yearEnd={currentYear + 4}
+                    />
+                  </div>
                 </div>
                 <button type="submit" className={`${btnPrimary} w-full`}>
                   Guardar alterações
                 </button>
               </form>
+              </div>
 
               <div className="my-6 border-t border-slate-200 dark:border-slate-700" />
 
