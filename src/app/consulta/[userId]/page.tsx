@@ -5,6 +5,7 @@ import {
   computeBalanceDetailForUser,
   ledgerKindLabel,
 } from "@/lib/balance";
+import { PublicShell } from "@/components/PublicShell";
 import { requireConsultaSession } from "@/lib/auth-consulta";
 
 const eurFmt = new Intl.NumberFormat("pt-PT", {
@@ -19,6 +20,12 @@ const dateTimeFmt = new Intl.DateTimeFormat("pt-PT", {
   hour: "2-digit",
   minute: "2-digit",
 });
+
+const card =
+  "mx-auto w-full max-w-2xl rounded-2xl border border-slate-200/80 bg-white/90 p-6 shadow-xl shadow-slate-200/40 backdrop-blur-sm sm:rounded-3xl sm:p-8 dark:border-slate-700/80 dark:bg-slate-900/85 dark:shadow-black/40";
+
+const btnOutline =
+  "touch-target inline-flex min-h-12 items-center justify-center rounded-xl border border-slate-200 bg-white px-4 py-2.5 text-sm font-semibold text-slate-800 transition hover:bg-slate-50 dark:border-slate-600 dark:bg-slate-800 dark:text-slate-100";
 
 type PageProps = {
   params: Promise<{ userId: string }>;
@@ -45,28 +52,28 @@ export default async function ConsultaUserDetailPage({ params }: PageProps) {
   const b = balanceCents;
 
   return (
-    <div className="min-h-screen bg-[#f2efe2] px-4 py-10 dark:bg-[#1a2119]">
-      <main className="mx-auto w-full max-w-2xl rounded-2xl border border-[#7f8a6a] bg-[#fcfbf6] p-8 shadow-sm dark:border-[#647157] dark:bg-[#202a20]">
-        <p className="text-xs font-semibold uppercase tracking-[0.2em] text-[#6f7d5a] dark:text-[#b7c29d]">
+    <PublicShell>
+      <main className={card}>
+        <p className="text-[0.65rem] font-semibold uppercase tracking-[0.28em] text-emerald-700 dark:text-emerald-400">
           Consulta pública
         </p>
-        <h1 className="mt-2 text-2xl font-bold text-[#2f3a2d] dark:text-[#e8e3d3]">
+        <h1 className="mt-3 text-xl font-semibold leading-snug text-slate-900 sm:text-2xl dark:text-white">
           Saldo — {user.name}
         </h1>
-        <p className="mt-2 text-sm text-[#4a5644] dark:text-[#c5cfb2]">
-          O saldo em euros é a referência oficial. A coluna de meses é uma estimativa com
-          base na cota atual. Só leitura.
+        <p className="mt-2 text-sm text-slate-600 dark:text-slate-400">
+          O saldo em euros é a referência oficial. A estimativa em meses usa a cota atual.
+          Só leitura.
         </p>
 
-        <div className="mt-6 rounded-lg border border-[#c4d1b3] bg-[#f8f6ee] p-4 dark:border-[#4f5a45] dark:bg-[#273126]">
-          <p className="text-sm text-[#4a5644] dark:text-[#c5cfb2]">
+        <div className="mt-6 rounded-2xl border border-slate-200/80 bg-slate-50/80 p-5 dark:border-slate-700 dark:bg-slate-800/40">
+          <p className="text-sm text-slate-600 dark:text-slate-400">
             {b > 0
               ? "Dívida em falta"
               : b < 0
                 ? "Crédito a favor"
                 : "Saldo"}
           </p>
-          <p className="mt-1 text-2xl font-semibold tabular-nums text-[#2f3a2d] dark:text-[#e8e3d3]">
+          <p className="mt-1 text-2xl font-semibold tabular-nums text-slate-900 dark:text-white">
             {b > 0
               ? eurFmt.format(b / 100)
               : b < 0
@@ -74,72 +81,100 @@ export default async function ConsultaUserDetailPage({ params }: PageProps) {
                 : eurFmt.format(0)}
           </p>
           {!quotaNotConfigured && b > 0 ? (
-            <p className="mt-2 text-sm text-[#4a5644] dark:text-[#c5cfb2]">
-              Estimativa: ~{estimatedMonthsEquivalent} mês(es) de cota (referência).
+            <p className="mt-2 text-sm text-slate-600 dark:text-slate-400">
+              Estimativa: ~{estimatedMonthsEquivalent} mês(es) (referência).
             </p>
           ) : null}
         </div>
 
         {quotaNotConfigured ? (
-          <p className="mt-4 rounded-md bg-amber-100 p-3 text-sm text-amber-950 dark:bg-amber-950/30 dark:text-amber-100">
-            A administração ainda não definiu o valor da cota mensal. O saldo em euros
-            mantém-se correto; a estimativa de meses só aparece após a definição da
-            cota.
+          <p className="mt-4 rounded-xl border border-amber-200/80 bg-amber-50 px-4 py-3 text-sm text-amber-950 dark:border-amber-900/40 dark:bg-amber-950/25 dark:text-amber-100">
+            A administração ainda não definiu a cota mensal. O saldo mantém-se correto.
           </p>
         ) : null}
 
         {ledgerEntries.length === 0 ? (
-          <p className="mt-6 text-sm text-[#4a5644] dark:text-[#c5cfb2]">
+          <p className="mt-6 text-sm text-slate-600 dark:text-slate-400">
             Ainda não há lançamentos.
           </p>
         ) : (
-          <div className="mt-6 overflow-x-auto rounded-xl border border-[#c4d1b3] dark:border-[#4f5a45]">
-            <table className="w-full min-w-[360px] text-left text-sm">
-              <thead className="bg-[#e8eadf] text-[#3d4a38] dark:bg-[#2a3528] dark:text-[#d5dfc4]">
-                <tr>
-                  <th className="px-4 py-3 font-semibold">Data</th>
-                  <th className="px-4 py-3 font-semibold">Tipo</th>
-                  <th className="px-4 py-3 font-semibold">Mês</th>
-                  <th className="px-4 py-3 font-semibold">Valor</th>
-                  <th className="px-4 py-3 font-semibold">Nota</th>
-                </tr>
-              </thead>
-              <tbody className="divide-y divide-[#d8e0cc] dark:divide-[#3d4a38]">
-                {ledgerEntries.map((row) => (
-                  <tr
-                    key={row.id}
-                    className="bg-white/80 text-[#2f3a2d] dark:bg-[#1b241b]/80 dark:text-[#e8e3d3]"
-                  >
-                    <td className="px-4 py-3 tabular-nums text-[#4a5644] dark:text-[#c5cfb2]">
+          <>
+            <ul
+              className="mt-6 space-y-2 md:hidden"
+              aria-label="Lançamentos"
+            >
+              {ledgerEntries.map((row) => (
+                <li
+                  key={row.id}
+                  className="rounded-2xl border border-slate-200/90 bg-white/95 p-4 text-sm dark:border-slate-700 dark:bg-slate-900/50"
+                >
+                  <div className="flex items-start justify-between gap-2">
+                    <p className="text-xs tabular-nums text-slate-500 dark:text-slate-400">
                       {dateTimeFmt.format(row.createdAt)}
-                    </td>
-                    <td className="px-4 py-3">{ledgerKindLabel(row.kind)}</td>
-                    <td className="px-4 py-3 font-mono tabular-nums">
-                      {row.monthKey ?? "—"}
-                    </td>
-                    <td className="px-4 py-3 tabular-nums">
+                    </p>
+                    <p className="shrink-0 tabular-nums font-semibold text-slate-900 dark:text-white">
                       {row.deltaCents > 0 ? "+" : ""}
                       {eurFmt.format(row.deltaCents / 100)}
-                    </td>
-                    <td className="max-w-[140px] truncate px-4 py-3 text-[#4a5644] dark:text-[#c5cfb2]">
-                      {row.note ?? "—"}
-                    </td>
+                    </p>
+                  </div>
+                  <p className="mt-2 font-medium text-slate-800 dark:text-slate-200">
+                    {ledgerKindLabel(row.kind)}
+                  </p>
+                  <p className="mt-1 font-mono text-xs tabular-nums text-slate-600 dark:text-slate-400">
+                    Mês: {row.monthKey ?? "—"}
+                  </p>
+                  <p className="mt-2 break-words text-xs text-slate-600 dark:text-slate-400">
+                    {row.note ?? "—"}
+                  </p>
+                </li>
+              ))}
+            </ul>
+
+            <div className="mt-6 hidden overflow-x-auto rounded-2xl border border-slate-200/80 md:block dark:border-slate-700/80">
+              <table className="w-full min-w-[360px] text-left text-sm">
+                <thead className="bg-slate-100/90 text-slate-700 dark:bg-slate-800/90 dark:text-slate-200">
+                  <tr>
+                    <th className="px-4 py-3 font-semibold">Data</th>
+                    <th className="px-4 py-3 font-semibold">Tipo</th>
+                    <th className="px-4 py-3 font-semibold">Mês</th>
+                    <th className="px-4 py-3 font-semibold">Valor</th>
+                    <th className="px-4 py-3 font-semibold">Nota</th>
                   </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
+                </thead>
+                <tbody className="divide-y divide-slate-200/80 dark:divide-slate-700/80">
+                  {ledgerEntries.map((row) => (
+                    <tr
+                      key={row.id}
+                      className="bg-white/90 text-slate-900 dark:bg-slate-900/30 dark:text-slate-100"
+                    >
+                      <td className="px-4 py-3 tabular-nums text-slate-600 dark:text-slate-400">
+                        {dateTimeFmt.format(row.createdAt)}
+                      </td>
+                      <td className="px-4 py-3">{ledgerKindLabel(row.kind)}</td>
+                      <td className="px-4 py-3 font-mono tabular-nums">
+                        {row.monthKey ?? "—"}
+                      </td>
+                      <td className="px-4 py-3 tabular-nums">
+                        {row.deltaCents > 0 ? "+" : ""}
+                        {eurFmt.format(row.deltaCents / 100)}
+                      </td>
+                      <td className="max-w-[140px] truncate px-4 py-3 text-slate-600 dark:text-slate-400">
+                        {row.note ?? "—"}
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          </>
         )}
 
         <div className="mt-8">
-          <Link
-            href="/consulta"
-            className="inline-flex rounded-lg border border-[#7f8a6a] px-4 py-2 text-sm font-semibold text-[#2f3a2d] transition hover:bg-[#ece8da] dark:border-[#95a386] dark:text-[#e8e3d3] dark:hover:bg-[#2a3528]"
-          >
+          <Link href="/consulta" className={btnOutline}>
             Voltar à lista
           </Link>
         </div>
       </main>
-    </div>
+    </PublicShell>
   );
 }

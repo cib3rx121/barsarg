@@ -19,10 +19,29 @@
   }
 }
 
+html {
+  -webkit-text-size-adjust: 100%;
+  text-size-adjust: 100%;
+}
+
 body {
   background: var(--background);
   color: var(--foreground);
   font-family: var(--font-geist-sans), Arial, Helvetica, sans-serif;
+}
+
+/* Telemóvel: evita “bounce” horizontal; respeita área segura (notch / home indicator). */
+.site-body {
+  overflow-x: clip;
+  padding-left: env(safe-area-inset-left, 0px);
+  padding-right: env(safe-area-inset-right, 0px);
+  padding-bottom: env(safe-area-inset-bottom, 0px);
+}
+
+.touch-target {
+  min-height: 44px;
+  min-width: 44px;
+  touch-action: manipulation;
 }
 
 /* Painel admin — animações discretas (sem JS) */
@@ -88,6 +107,46 @@ body {
     animation: none;
   }
   .admin-header-glow {
+    animation: none;
+  }
+}
+
+@keyframes drawer-enter {
+  from {
+    opacity: 0;
+    transform: translateX(100%);
+  }
+  to {
+    opacity: 1;
+    transform: translateX(0);
+  }
+}
+
+@keyframes backdrop-enter {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+.drawer-backdrop-animate {
+  animation: backdrop-enter 0.25s ease-out both;
+}
+
+.drawer-panel-animate {
+  animation: drawer-enter 0.32s cubic-bezier(0.22, 1, 0.36, 1) both;
+}
+
+.public-shell-content > *:first-child {
+  animation: admin-fade-up 0.45s cubic-bezier(0.22, 1, 0.36, 1) both;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .drawer-backdrop-animate,
+  .drawer-panel-animate,
+  .public-shell-content > *:first-child {
     animation: none;
   }
 }

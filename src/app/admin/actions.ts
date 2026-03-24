@@ -77,41 +77,60 @@ export async function createUser(formData: FormData) {
   redirect("/admin");
 }
 
-export async function updateUserChargeStart(formData: FormData) {
+export async function updateMember(formData: FormData) {
   await assertAdmin();
 
-  const userId = String(formData.get("chargeStartUserId") ?? "").trim();
-  const raw = String(formData.get("chargeStartDateEdit") ?? "").trim();
+  const userId = String(formData.get("userId") ?? "").trim();
+  const name = String(formData.get("name") ?? "").trim();
+  const entryRaw = String(formData.get("entryDate") ?? "").trim();
+  const chargeRaw = String(formData.get("chargeStartDate") ?? "").trim();
 
-  if (!userId || !raw) {
-    redirect("/admin?error=7");
+  if (!userId || !name || !entryRaw) {
+    redirect("/admin?error=1");
   }
 
-  const parsed = parseEntryDate(raw);
-  if (!parsed) {
-    redirect("/admin?error=7");
+  const entryDate = parseEntryDate(entryRaw);
+  if (!entryDate) {
+    redirect("/admin?error=1");
   }
 
-  const existing = await prisma.user.findUnique({
-    where: { id: userId },
-    select: { entryDate: true },
-  });
-  if (!existing) {
-    redirect("/admin?error=7");
-  }
-
-  const entryMk = monthKeyFromUtcDate(existing.entryDate);
-  const chargeMk = monthKeyFromUtcDate(parsed);
-  if (chargeMk < entryMk) {
-    redirect("/admin?error=8");
+  let chargeStartDate: Date | null = null;
+  if (chargeRaw) {
+    const parsed = parseEntryDate(chargeRaw);
+    if (!parsed) {
+      redirect("/admin?error=1");
+    }
+    const entryMk = monthKeyFromUtcDate(entryDate);
+    const chargeMk = monthKeyFromUtcDate(parsed);
+    if (chargeMk < entryMk) {
+      redirect("/admin?error=8");
+    }
+    chargeStartDate = parsed;
   }
 
   await prisma.user.update({
     where: { id: userId },
-    data: { chargeStartDate: parsed },
+    data: { name, entryDate, chargeStartDate },
   });
 
   await reconcileUserCharges(userId);
+
+  revalidatePath("/admin");
+  revalidatePath("/consulta");
+  redirect("/admin");
+}
+
+export async function deleteMember(formData: FormData) {
+  await assertAdmin();
+
+  const userId = String(formData.get("userId") ?? "").trim();
+  const confirm = String(formData.get("deleteConfirm") ?? "").trim();
+
+  if (!userId || confirm !== "APAGAR") {
+    redirect("/admin?error=9");
+  }
+
+  await prisma.user.delete({ where: { id: userId } });
 
   revalidatePath("/admin");
   revalidatePath("/consulta");

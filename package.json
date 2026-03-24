@@ -4,10 +4,11 @@
   "private": true,
   "scripts": {
     "dev": "next dev",
-    "build": "prisma generate && next build",
+    "build": "prisma generate && node scripts/optimize-logo.mjs && next build",
     "start": "next start",
     "lint": "eslint",
-    "db:migrate:deploy": "prisma migrate deploy"
+    "db:migrate:deploy": "prisma migrate deploy",
+    "brand:optimize": "node scripts/optimize-logo.mjs"
   },
   "dependencies": {
     "@prisma/adapter-pg": "^7.5.0",
@@ -27,6 +28,7 @@
     "eslint": "^9",
     "eslint-config-next": "16.2.1",
     "prisma": "^7.5.0",
+    "sharp": "^0.34.5",
     "tailwindcss": "^4",
     "typescript": "^5"
   }

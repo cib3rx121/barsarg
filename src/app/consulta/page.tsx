@@ -5,6 +5,7 @@ import {
   backfillMissingMonthlyCharges,
   computeBalancesForUsers,
 } from "@/lib/balance";
+import { PublicShell } from "@/components/PublicShell";
 import { prisma } from "@/lib/prisma";
 
 type ConsultaPageProps = {
@@ -23,6 +24,21 @@ const dateFmt = new Intl.DateTimeFormat("pt-PT", {
   month: "short",
   year: "numeric",
 });
+
+const card =
+  "rounded-2xl border border-slate-200/80 bg-white/90 p-6 shadow-xl shadow-slate-200/40 backdrop-blur-sm sm:rounded-3xl sm:p-8 dark:border-slate-700/80 dark:bg-slate-900/85 dark:shadow-black/40";
+
+const inpt =
+  "min-h-12 w-full rounded-xl border border-slate-200 bg-white px-4 py-3 text-base text-slate-900 shadow-sm transition focus:border-emerald-500/50 focus:outline-none focus:ring-2 focus:ring-emerald-500/20 dark:border-slate-600 dark:bg-slate-950/50 dark:text-slate-100 sm:text-sm";
+
+const btnPrimary =
+  "touch-target inline-flex min-h-12 w-full items-center justify-center rounded-xl bg-emerald-600 px-4 py-3 text-sm font-semibold text-white shadow-lg shadow-emerald-600/20 transition hover:bg-emerald-500";
+
+const btnOutline =
+  "touch-target inline-flex min-h-12 items-center justify-center rounded-xl border border-slate-200 bg-white px-4 py-2.5 text-sm font-semibold text-slate-800 transition hover:bg-slate-50 dark:border-slate-600 dark:bg-slate-800 dark:text-slate-100";
+
+const btnDark =
+  "touch-target inline-flex min-h-12 items-center justify-center rounded-xl bg-slate-800 px-4 py-2.5 text-sm font-semibold text-white transition hover:bg-slate-700 dark:bg-emerald-600 dark:hover:bg-emerald-500";
 
 export default async function ConsultaPage({ searchParams }: ConsultaPageProps) {
   const params = await searchParams;
@@ -61,52 +77,50 @@ export default async function ConsultaPage({ searchParams }: ConsultaPageProps) 
 
   if (consultSession !== "ok") {
     return (
-      <div className="flex min-h-screen items-center justify-center bg-[#f2efe2] px-4 dark:bg-[#1a2119]">
-        <main className="w-full max-w-md rounded-2xl border border-[#7f8a6a] bg-[#fcfbf6] p-8 shadow-sm dark:border-[#647157] dark:bg-[#202a20]">
-          <p className="text-xs font-semibold uppercase tracking-[0.2em] text-[#6f7d5a] dark:text-[#b7c29d]">
-            Consulta pública
-          </p>
-          <h1 className="mt-2 text-xl font-bold text-[#2f3a2d] dark:text-[#e8e3d3]">
-            Acesso por PIN
-          </h1>
-          <p className="mt-2 text-sm text-[#4a5644] dark:text-[#c5cfb2]">
-            Introduza o PIN fornecido pela administração. Só utilizadores autorizados
-            devem aceder a esta área.
-          </p>
-
-          {hasError ? (
-            <p className="mt-4 rounded-md bg-red-100 p-3 text-sm text-red-800 dark:bg-red-950/30 dark:text-red-300">
-              PIN incorreto. Tente novamente.
+      <PublicShell>
+        <div className="flex min-h-[calc(100dvh-6rem)] items-center justify-center py-6 sm:py-8">
+          <main className={`w-full max-w-md ${card}`}>
+            <p className="text-[0.65rem] font-semibold uppercase tracking-[0.28em] text-emerald-700 dark:text-emerald-400">
+              Consulta pública
             </p>
-          ) : null}
+            <h1 className="mt-3 text-xl font-semibold text-slate-900 dark:text-white">
+              Acesso por PIN
+            </h1>
+            <p className="mt-2 text-sm leading-relaxed text-slate-600 dark:text-slate-400">
+              Introduza o PIN fornecido pela administração.
+            </p>
 
-          <form action={validatePin} className="mt-6 space-y-4">
-            <div>
-              <label
-                htmlFor="pin"
-                className="mb-1 block text-sm font-medium text-[#3f4a3a] dark:text-[#c5cfb2]"
-              >
-                PIN
-              </label>
-              <input
-                id="pin"
-                name="pin"
-                type="password"
-                required
-                inputMode="numeric"
-                className="w-full rounded-lg border border-[#8b9678] bg-white px-3 py-2 text-sm text-[#232b21] outline-none ring-[#5b6a4a] transition focus:ring-2 dark:border-[#6b775d] dark:bg-[#1b241b] dark:text-[#e8e3d3]"
-              />
-            </div>
+            {hasError ? (
+              <p className="mt-4 rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-800 dark:border-red-900/50 dark:bg-red-950/35 dark:text-red-200">
+                PIN incorreto. Tente novamente.
+              </p>
+            ) : null}
 
-            <button
-              type="submit"
-              className="w-full rounded-lg bg-[#2f3b2f] px-4 py-2.5 text-sm font-semibold text-[#f6f3e7] transition hover:bg-[#3b4a39] dark:bg-[#b7c29d] dark:text-[#1e251d] dark:hover:bg-[#cad3b3]"
-            >
-              Entrar
-            </button>
-          </form>
-        </main>
-      </div>
+            <form action={validatePin} className="mt-6 space-y-4">
+              <div>
+                <label
+                  htmlFor="pin"
+                  className="mb-1.5 block text-sm font-medium text-slate-700 dark:text-slate-300"
+                >
+                  PIN
+                </label>
+                <input
+                  id="pin"
+                  name="pin"
+                  type="password"
+                  required
+                  inputMode="numeric"
+                  className={inpt}
+                />
+              </div>
+
+              <button type="submit" className={btnPrimary}>
+                Entrar
+              </button>
+            </form>
+          </main>
+        </div>
+      </PublicShell>
     );
   }
 
@@ -120,105 +134,159 @@ export default async function ConsultaPage({ searchParams }: ConsultaPageProps) 
   const balanceByUser = await computeBalancesForUsers(users);
 
   return (
-    <div className="min-h-screen bg-[#f2efe2] px-4 py-10 dark:bg-[#1a2119]">
-      <main className="mx-auto w-full max-w-4xl rounded-2xl border border-[#7f8a6a] bg-[#fcfbf6] p-8 shadow-sm dark:border-[#647157] dark:bg-[#202a20]">
-        <p className="text-xs font-semibold uppercase tracking-[0.2em] text-[#6f7d5a] dark:text-[#b7c29d]">
+    <PublicShell>
+      <main className={`mx-auto w-full max-w-4xl ${card}`}>
+        <p className="text-[0.65rem] font-semibold uppercase tracking-[0.28em] text-emerald-700 dark:text-emerald-400">
           Consulta pública
         </p>
-        <h1 className="mt-2 text-2xl font-bold text-[#2f3a2d] dark:text-[#e8e3d3]">
+        <h1 className="mt-3 text-xl font-semibold text-slate-900 sm:text-2xl dark:text-white">
           Resumo
         </h1>
-        <p className="mt-2 text-sm text-[#4a5644] dark:text-[#c5cfb2]">
-          Lista de associados ativos e respectivo saldo (dívida ou crédito). Clique no
-          nome para ver o detalhe e o histórico de lançamentos.
+        <p className="mt-2 text-sm text-slate-600 dark:text-slate-400">
+          Associados ativos e saldo. Clique no nome para o detalhe.
         </p>
 
-        <div className="mt-6 flex flex-wrap gap-3">
-          <Link
-            href="/"
-            className="inline-flex rounded-lg border border-[#7f8a6a] px-4 py-2 text-sm font-semibold text-[#2f3a2d] transition hover:bg-[#ece8da] dark:border-[#95a386] dark:text-[#e8e3d3] dark:hover:bg-[#2a3528]"
-          >
-            Página inicial
+        <div className="mt-6 flex flex-col gap-2 sm:flex-row sm:flex-wrap sm:gap-3">
+          <Link href="/" className={`${btnOutline} w-full sm:w-auto`}>
+            Início
           </Link>
-          <form action={logoutConsulta}>
-            <button
-              type="submit"
-              className="inline-flex rounded-lg bg-[#2f3b2f] px-4 py-2 text-sm font-semibold text-[#f6f3e7] transition hover:bg-[#3b4a39] dark:bg-[#b7c29d] dark:text-[#1e251d] dark:hover:bg-[#cad3b3]"
-            >
+          <form action={logoutConsulta} className="w-full sm:w-auto">
+            <button type="submit" className={`${btnDark} w-full`}>
               Terminar sessão
             </button>
           </form>
         </div>
 
         {users.length === 0 ? (
-          <p className="mt-8 rounded-lg border border-dashed border-[#9ba78a] bg-[#f5f1e4] p-4 text-sm text-[#4a5644] dark:border-[#738063] dark:bg-[#273126] dark:text-[#cdd6bd]">
+          <p className="mt-8 rounded-2xl border border-dashed border-slate-300 bg-slate-50/80 px-5 py-6 text-center text-sm text-slate-600 dark:border-slate-600 dark:bg-slate-800/50 dark:text-slate-400">
             Ainda não há utilizadores ativos na lista.
           </p>
         ) : (
-          <div className="mt-8 overflow-x-auto rounded-xl border border-[#c4d1b3] dark:border-[#4f5a45]">
-            <table className="w-full min-w-[560px] text-left text-sm">
-              <thead className="bg-[#e8eadf] text-[#3d4a38] dark:bg-[#2a3528] dark:text-[#d5dfc4]">
-                <tr>
-                  <th className="px-4 py-3 font-semibold">Nome</th>
-                  <th className="px-4 py-3 font-semibold">Entrada</th>
-                  <th className="px-4 py-3 font-semibold">Saldo</th>
-                  <th className="px-4 py-3 font-semibold">Meses (estim.)</th>
-                </tr>
-              </thead>
-              <tbody className="divide-y divide-[#d8e0cc] dark:divide-[#3d4a38]">
-                {users.map((u) => {
-                  const d = balanceByUser.get(u.id);
-                  const b = d?.balanceCents ?? 0;
-                  const noQuotaCfg = d?.quotaNotConfigured
-                    ? "Cota ainda não definida — meses estimados indisponíveis."
-                    : null;
-                  return (
-                    <tr
-                      key={u.id}
-                      className="bg-white/80 text-[#2f3a2d] dark:bg-[#1b241b]/80 dark:text-[#e8e3d3]"
+          <>
+            <ul
+              className="mt-8 space-y-2 md:hidden"
+              aria-label="Associados e saldos"
+            >
+              {users.map((u) => {
+                const d = balanceByUser.get(u.id);
+                const b = d?.balanceCents ?? 0;
+                const noQuotaCfg = d?.quotaNotConfigured
+                  ? "Cota ainda não definida — meses estimados indisponíveis."
+                  : null;
+                return (
+                  <li key={u.id}>
+                    <Link
+                      href={`/consulta/${u.id}`}
+                      className="block rounded-2xl border border-slate-200/90 bg-white/95 p-4 shadow-sm transition active:scale-[0.99] dark:border-slate-700 dark:bg-slate-900/50"
                     >
-                      <td className="px-4 py-3 font-medium">
-                        <Link
-                          href={`/consulta/${u.id}`}
-                          className="text-[#2d4a22] underline decoration-[#7f8a6a] underline-offset-2 hover:text-[#1e251d] dark:text-[#c8e8bc] dark:hover:text-[#e8e3d3]"
-                        >
-                          {u.name}
-                        </Link>
-                      </td>
-                      <td className="px-4 py-3 tabular-nums text-[#4a5644] dark:text-[#c5cfb2]">
-                        {dateFmt.format(u.entryDate)}
-                      </td>
-                      <td className="px-4 py-3 tabular-nums font-medium">
-                        {b > 0 ? (
-                          eurFmt.format(b / 100)
-                        ) : b < 0 ? (
-                          <span className="text-[#1d5c38] dark:text-[#8fd4a8]">
-                            Crédito {eurFmt.format((-b) / 100)}
+                      <div className="flex items-start justify-between gap-3">
+                        <div className="min-w-0">
+                          <span className="font-semibold text-emerald-800 dark:text-emerald-400">
+                            {u.name}
                           </span>
-                        ) : (
-                          eurFmt.format(0)
-                        )}
-                      </td>
-                      <td className="px-4 py-3 text-[#4a5644] dark:text-[#c5cfb2]">
-                        <span className="tabular-nums">
-                          {d && !d.quotaNotConfigured
-                            ? d.estimatedMonthsEquivalent
-                            : "—"}
-                        </span>
-                        {noQuotaCfg ? (
-                          <span className="mt-1 block text-xs text-amber-800 dark:text-amber-200">
-                            {noQuotaCfg}
+                          <p className="mt-1 text-xs text-slate-500 dark:text-slate-400">
+                            Entrada {dateFmt.format(u.entryDate)}
+                          </p>
+                        </div>
+                        <div className="shrink-0 text-right">
+                          <p className="tabular-nums text-sm font-semibold text-slate-900 dark:text-white">
+                            {b > 0 ? (
+                              eurFmt.format(b / 100)
+                            ) : b < 0 ? (
+                              <span className="text-emerald-700 dark:text-emerald-400">
+                                {eurFmt.format((-b) / 100)}
+                              </span>
+                            ) : (
+                              eurFmt.format(0)
+                            )}
+                          </p>
+                          <p className="mt-0.5 text-xs text-slate-500 dark:text-slate-400">
+                            {d && !d.quotaNotConfigured
+                              ? `~${d.estimatedMonthsEquivalent} m.`
+                              : "—"}
+                          </p>
+                        </div>
+                      </div>
+                      {noQuotaCfg ? (
+                        <p className="mt-2 text-xs text-amber-700 dark:text-amber-300">
+                          {noQuotaCfg}
+                        </p>
+                      ) : (
+                        <p className="mt-2 text-xs font-medium text-slate-500 dark:text-slate-400">
+                          Ver detalhe →
+                        </p>
+                      )}
+                    </Link>
+                  </li>
+                );
+              })}
+            </ul>
+
+            <div className="mt-8 hidden overflow-x-auto rounded-2xl border border-slate-200/80 md:block dark:border-slate-700/80">
+              <table className="w-full min-w-[560px] text-left text-sm">
+                <thead className="bg-slate-100/90 text-slate-700 dark:bg-slate-800/90 dark:text-slate-200">
+                  <tr>
+                    <th className="px-4 py-3 font-semibold">Nome</th>
+                    <th className="px-4 py-3 font-semibold">Entrada</th>
+                    <th className="px-4 py-3 font-semibold">Saldo</th>
+                    <th className="px-4 py-3 font-semibold">Meses (estim.)</th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-slate-200/80 dark:divide-slate-700/80">
+                  {users.map((u) => {
+                    const d = balanceByUser.get(u.id);
+                    const b = d?.balanceCents ?? 0;
+                    const noQuotaCfg = d?.quotaNotConfigured
+                      ? "Cota ainda não definida — meses estimados indisponíveis."
+                      : null;
+                    return (
+                      <tr
+                        key={u.id}
+                        className="bg-white/90 text-slate-900 transition-colors hover:bg-emerald-50/40 dark:bg-slate-900/30 dark:text-slate-100 dark:hover:bg-emerald-950/20"
+                      >
+                        <td className="px-4 py-3 font-medium">
+                          <Link
+                            href={`/consulta/${u.id}`}
+                            className="text-emerald-800 underline decoration-slate-300 underline-offset-2 hover:text-emerald-600 dark:text-emerald-400 dark:hover:text-emerald-300"
+                          >
+                            {u.name}
+                          </Link>
+                        </td>
+                        <td className="px-4 py-3 tabular-nums text-slate-600 dark:text-slate-400">
+                          {dateFmt.format(u.entryDate)}
+                        </td>
+                        <td className="px-4 py-3 tabular-nums font-medium">
+                          {b > 0 ? (
+                            eurFmt.format(b / 100)
+                          ) : b < 0 ? (
+                            <span className="text-emerald-700 dark:text-emerald-400">
+                              Crédito {eurFmt.format((-b) / 100)}
+                            </span>
+                          ) : (
+                            eurFmt.format(0)
+                          )}
+                        </td>
+                        <td className="px-4 py-3 text-slate-600 dark:text-slate-400">
+                          <span className="tabular-nums">
+                            {d && !d.quotaNotConfigured
+                              ? d.estimatedMonthsEquivalent
+                              : "—"}
                           </span>
-                        ) : null}
-                      </td>
-                    </tr>
-                  );
-                })}
-              </tbody>
-            </table>
-          </div>
+                          {noQuotaCfg ? (
+                            <span className="mt-1 block text-xs text-amber-700 dark:text-amber-300">
+                              {noQuotaCfg}
+                            </span>
+                          ) : null}
+                        </td>
+                      </tr>
+                    );
+                  })}
+                </tbody>
+              </table>
+            </div>
+          </>
         )}
       </main>
-    </div>
+    </PublicShell>
   );
 }

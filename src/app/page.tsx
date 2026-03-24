@@ -1,38 +1,44 @@
 import Link from "next/link";
+import { PublicShell } from "@/components/PublicShell";
+
+const card =
+  "w-full max-w-lg rounded-2xl border border-slate-200/80 bg-white/90 p-6 shadow-xl shadow-slate-200/40 backdrop-blur-sm sm:rounded-3xl sm:p-8 dark:border-slate-700/80 dark:bg-slate-900/85 dark:shadow-black/40";
+
+const btnPrimary =
+  "touch-target flex min-h-12 w-full items-center justify-center rounded-xl bg-emerald-600 px-4 py-3 text-sm font-semibold text-white shadow-lg shadow-emerald-600/20 transition hover:bg-emerald-500";
+
+const btnOutline =
+  "touch-target flex min-h-12 w-full items-center justify-center rounded-xl border border-slate-200 bg-white px-4 py-3 text-sm font-semibold text-slate-800 transition hover:bg-slate-50 dark:border-slate-600 dark:bg-slate-800 dark:text-slate-100 dark:hover:bg-slate-700";
 
 export default function Home() {
   return (
-    <div className="flex min-h-screen items-center justify-center bg-[#f2efe2] px-4 dark:bg-[#1a2119]">
-      <main className="w-full max-w-2xl rounded-2xl border border-[#7f8a6a] bg-[#fcfbf6] p-8 shadow-sm dark:border-[#647157] dark:bg-[#202a20]">
-        <p className="text-xs font-semibold uppercase tracking-[0.2em] text-[#6f7d5a] dark:text-[#b7c29d]">
-          Academia Militar
-        </p>
-        <h1 className="mt-2 text-3xl font-bold text-[#2f3a2d] dark:text-[#e8e3d3]">
-          Bar de Sargentos
-        </h1>
-        <p className="mt-3 text-sm text-[#4a5644] dark:text-[#c5cfb2]">
-          Gestão centralizada de quotas e saldos dos associados.
-        </p>
+    <PublicShell>
+      <div className="flex min-h-[calc(100vh-8rem)] items-center justify-center py-8">
+        <main className={card}>
+          <p className="text-[0.65rem] font-semibold uppercase tracking-[0.28em] text-emerald-700 dark:text-emerald-400">
+            Academia Militar
+          </p>
+          <h1 className="mt-3 text-2xl font-semibold tracking-tight text-slate-900 sm:text-3xl dark:text-white">
+            Bar de Sargentos
+          </h1>
+          <p className="mt-3 text-sm leading-relaxed text-slate-600 dark:text-slate-400">
+            Gestão centralizada de quotas e saldos dos associados.
+          </p>
 
-        <div className="mt-6 rounded-lg border border-dashed border-[#9ba78a] bg-[#f5f1e4] p-3 text-sm text-[#4a5644] dark:border-[#738063] dark:bg-[#273126] dark:text-[#cdd6bd]">
-          Estado do serviço: operacional e disponível.
-        </div>
+          <div className="mt-6 rounded-2xl border border-slate-200/80 bg-slate-50/80 px-4 py-3 text-sm text-slate-600 dark:border-slate-700 dark:bg-slate-800/50 dark:text-slate-400">
+            Serviço operacional.
+          </div>
 
-        <div className="mt-6 grid gap-3 sm:grid-cols-2">
-          <Link
-            href="/admin/login"
-            className="rounded-lg bg-[#2f3b2f] px-4 py-3 text-center text-sm font-semibold text-[#f6f3e7] transition hover:bg-[#3b4a39] dark:bg-[#b7c29d] dark:text-[#1e251d] dark:hover:bg-[#cad3b3]"
-          >
-            Área administrativa
-          </Link>
-          <Link
-            href="/consulta"
-            className="rounded-lg border border-[#7f8a6a] px-4 py-3 text-center text-sm font-semibold text-[#2f3a2d] transition hover:bg-[#ece8da] dark:border-[#95a386] dark:text-[#e8e3d3] dark:hover:bg-[#2a3528]"
-          >
-            Consulta pública
-          </Link>
-        </div>
-      </main>
-    </div>
+          <div className="mt-8 grid gap-3 sm:grid-cols-2">
+            <Link href="/admin/login" className={btnPrimary}>
+              Área administrativa
+            </Link>
+            <Link href="/consulta" className={btnOutline}>
+              Consulta pública
+            </Link>
+          </div>
+        </main>
+      </div>
+    </PublicShell>
   );
 }
