@@ -6,6 +6,7 @@ import {
   clearPublicNotice,
   createAdminAccessUser,
   closeMonthSnapshot,
+  reopenMonthSnapshot,
   saveGlobalQuota,
   updateAdminPassword,
   updateConsultaPin,
@@ -92,6 +93,7 @@ export default async function AdminPage({ searchParams }: AdminPageProps) {
   const hasAdminCreateUserError = billingErr === "14";
   const hasAdminPasswordError = billingErr === "15";
   const hasMonthCloseError = billingErr === "16";
+  const hasMonthReopenError = billingErr === "17";
 
   const [users, quotaRow] = await Promise.all([
     prisma.user.findMany({
@@ -408,6 +410,11 @@ export default async function AdminPage({ searchParams }: AdminPageProps) {
               Mês inválido ou já fechado.
             </p>
           ) : null}
+          {hasMonthReopenError ? (
+            <p className="mt-3 rounded-lg border border-red-200 bg-red-50 px-3 py-2 text-sm text-red-800 dark:border-red-900/50 dark:bg-red-950/35 dark:text-red-200">
+              Não foi possível reabrir o mês. Confirme escrevendo REABRIR.
+            </p>
+          ) : null}
           <form action={closeMonthSnapshot} className="mt-4 grid gap-3 sm:grid-cols-[1fr_auto]">
             <div>
               <label className="mb-1 block text-sm font-medium text-slate-700 dark:text-slate-300">
@@ -436,6 +443,7 @@ export default async function AdminPage({ searchParams }: AdminPageProps) {
                     <th className="px-3 py-2 font-semibold">Com crédito</th>
                     <th className="px-3 py-2 font-semibold">Dívida total</th>
                     <th className="px-3 py-2 font-semibold">Recebido no mês</th>
+                    <th className="px-3 py-2 font-semibold">Ação</th>
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-slate-200/70 dark:divide-slate-700/70">
@@ -450,6 +458,23 @@ export default async function AdminPage({ searchParams }: AdminPageProps) {
                       </td>
                       <td className="px-3 py-2 tabular-nums">
                         {eurFmt.format(row.totalReceivedCents / 100)}
+                      </td>
+                      <td className="px-3 py-2">
+                        <form action={reopenMonthSnapshot} className="flex items-center gap-2">
+                          <input type="hidden" name="reopenMonthKey" value={row.monthKey} />
+                          <input
+                            name="reopenConfirm"
+                            type="text"
+                            placeholder="REABRIR"
+                            className="w-24 rounded-lg border border-slate-200 bg-white px-2 py-1 text-xs dark:border-slate-600 dark:bg-slate-900/40"
+                          />
+                          <button
+                            type="submit"
+                            className="rounded-lg border border-amber-300 bg-amber-50 px-2.5 py-1 text-xs font-semibold text-amber-800 hover:bg-amber-100 dark:border-amber-900/50 dark:bg-amber-950/30 dark:text-amber-200 dark:hover:bg-amber-900/35"
+                          >
+                            Reabrir mês
+                          </button>
+                        </form>
                       </td>
                     </tr>
                   ))}

@@ -574,6 +574,31 @@ export async function closeMonthSnapshot(formData: FormData) {
   redirect("/admin");
 }
 
+export async function reopenMonthSnapshot(formData: FormData) {
+  await assertAdmin();
+
+  const monthRaw = String(formData.get("reopenMonthKey") ?? "").trim();
+  const confirm = String(formData.get("reopenConfirm") ?? "").trim();
+  const monthKey = parseMonthKey(monthRaw);
+  if (!monthKey || confirm !== "REABRIR") {
+    redirect("/admin?error=17");
+  }
+
+  await prisma.monthClosure.delete({
+    where: { monthKey },
+  });
+
+  await logAdminEvent({
+    action: "DELETE",
+    entity: "MONTH_CLOSURE",
+    entityId: monthKey,
+    note: `Fecho mensal removido para ${monthKey}`,
+  });
+
+  revalidatePath("/admin");
+  redirect("/admin");
+}
+
 export async function createEvent(formData: FormData) {
   await assertAdmin();
 
