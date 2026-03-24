@@ -3,6 +3,8 @@ import {
   applyEventSettlement,
   closeEventRegistrations,
   createEvent,
+  deleteEvent,
+  reopenEventRegistrations,
   saveEventCosts,
 } from "@/app/admin/actions";
 import { requireAdminSession } from "@/lib/auth-admin";
@@ -28,6 +30,11 @@ const btnSecondary =
 export default async function ConviviosAdminPage() {
   await requireAdminSession();
 
+  const [usersCount, settledCount] = await Promise.all([
+    prisma.user.count({ where: { active: true } }),
+    prisma.event.count({ where: { status: "SETTLED" } }),
+  ]);
+
   const events = await prisma.event.findMany({
     orderBy: [{ status: "asc" }, { createdAt: "desc" }],
     include: {
@@ -52,6 +59,9 @@ export default async function ConviviosAdminPage() {
           </h1>
           <p className="mt-2 text-sm text-slate-600 dark:text-slate-400">
             Crie anúncios de convívio, recolha participações e liquide a conta por perfis.
+          </p>
+          <p className="mt-2 text-xs text-slate-500 dark:text-slate-400">
+            Associados ativos: {usersCount} · Convívios liquidados: {settledCount}
           </p>
           <div className="mt-4">
             <Link href="/admin" className={btnSecondary}>
@@ -164,13 +174,43 @@ export default async function ConviviosAdminPage() {
                         Encerrar inscrições
                       </button>
                     </form>
+                    <form action={reopenEventRegistrations}>
+                      <input type="hidden" name="eventId" value={event.id} />
+                      <button type="submit" className={`${btnSecondary} w-full`}>
+                        Reabrir inscrições
+                      </button>
+                    </form>
                     <form action={applyEventSettlement}>
                       <input type="hidden" name="eventId" value={event.id} />
-                      <button type="submit" className={`${btnPrimary} w-full`}>
+                      <button type="submit" className={`${btnPrimary} w-full sm:col-span-2`}>
                         Liquidar e lançar no saldo
                       </button>
                     </form>
                   </div>
+
+                  <details className="mt-4 rounded-xl border border-red-200/80 bg-red-50/70 p-3 dark:border-red-900/40 dark:bg-red-950/20">
+                    <summary className="cursor-pointer text-sm font-semibold text-red-800 dark:text-red-200">
+                      Zona de risco: eliminar convívio
+                    </summary>
+                    <p className="mt-2 text-xs text-red-700 dark:text-red-300">
+                      Use apenas se o convívio não se realizar. Escreva APAGAR para confirmar.
+                    </p>
+                    <form action={deleteEvent} className="mt-3 grid gap-2 sm:grid-cols-[1fr_auto]">
+                      <input type="hidden" name="eventId" value={event.id} />
+                      <input
+                        name="deleteConfirm"
+                        type="text"
+                        placeholder="APAGAR"
+                        className="rounded-lg border border-red-300 bg-white px-3 py-2 text-sm dark:border-red-900/50 dark:bg-slate-900/50"
+                      />
+                      <button
+                        type="submit"
+                        className="rounded-lg border border-red-300 bg-red-100 px-4 py-2 text-sm font-semibold text-red-800 hover:bg-red-200 dark:border-red-900/50 dark:bg-red-950/40 dark:text-red-200 dark:hover:bg-red-900/50"
+                      >
+                        Eliminar convívio
+                      </button>
+                    </form>
+                  </details>
 
                   <div className="mt-5 overflow-x-auto rounded-xl border border-slate-200/80 dark:border-slate-700/80">
                     <table className="w-full min-w-[620px] text-left text-sm">

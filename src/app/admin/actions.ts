@@ -705,6 +705,53 @@ export async function closeEventRegistrations(formData: FormData) {
   redirect("/admin/convivios");
 }
 
+export async function reopenEventRegistrations(formData: FormData) {
+  await assertAdmin();
+  const eventId = String(formData.get("eventId") ?? "").trim();
+  if (!eventId) {
+    redirect("/admin/convivios?error=5");
+  }
+  await prisma.event.update({
+    where: { id: eventId },
+    data: { status: "OPEN" },
+  });
+  await logAdminEvent({
+    action: "UPDATE",
+    entity: "EVENT",
+    entityId: eventId,
+    note: "Inscrições reabertas",
+  });
+  revalidatePath("/admin/convivios");
+  revalidatePath("/consulta");
+  redirect("/admin/convivios");
+}
+
+export async function deleteEvent(formData: FormData) {
+  await assertAdmin();
+  const eventId = String(formData.get("eventId") ?? "").trim();
+  const confirm = String(formData.get("deleteConfirm") ?? "").trim();
+  if (!eventId || confirm !== "APAGAR") {
+    redirect("/admin/convivios?error=6");
+  }
+
+  const event = await prisma.event.findUnique({
+    where: { id: eventId },
+    select: { title: true },
+  });
+  await prisma.event.delete({ where: { id: eventId } });
+
+  await logAdminEvent({
+    action: "DELETE",
+    entity: "EVENT",
+    entityId: eventId,
+    note: `Convívio eliminado: ${event?.title ?? eventId}`,
+  });
+
+  revalidatePath("/admin/convivios");
+  revalidatePath("/consulta");
+  redirect("/admin/convivios");
+}
+
 export async function applyEventSettlement(formData: FormData) {
   await assertAdmin();
   const eventId = String(formData.get("eventId") ?? "").trim();
