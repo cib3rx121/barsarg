@@ -5,6 +5,10 @@ import {
   backfillMissingMonthlyCharges,
   computeBalancesForUsers,
 } from "@/lib/balance";
+import {
+  formatMonthKeyLongPt,
+  monthKeyFromUtcDate,
+} from "@/lib/month-keys";
 import { PublicShell } from "@/components/PublicShell";
 import { prisma } from "@/lib/prisma";
 
@@ -19,11 +23,9 @@ const eurFmt = new Intl.NumberFormat("pt-PT", {
   currency: "EUR",
 });
 
-const dateFmt = new Intl.DateTimeFormat("pt-PT", {
-  day: "2-digit",
-  month: "short",
-  year: "numeric",
-});
+function entryMonthLabel(entryDate: Date) {
+  return formatMonthKeyLongPt(monthKeyFromUtcDate(entryDate));
+}
 
 const card =
   "rounded-2xl border border-slate-200/80 bg-white/90 p-6 shadow-xl shadow-slate-200/40 backdrop-blur-sm sm:rounded-3xl sm:p-8 dark:border-slate-700/80 dark:bg-slate-900/85 dark:shadow-black/40";
@@ -185,7 +187,7 @@ export default async function ConsultaPage({ searchParams }: ConsultaPageProps) 
                             {u.name}
                           </span>
                           <p className="mt-1 text-xs text-slate-500 dark:text-slate-400">
-                            Entrada {dateFmt.format(u.entryDate)}
+                            Entrada: {entryMonthLabel(u.entryDate)}
                           </p>
                         </div>
                         <div className="shrink-0 text-right">
@@ -227,7 +229,7 @@ export default async function ConsultaPage({ searchParams }: ConsultaPageProps) 
                 <thead className="bg-slate-100/90 text-slate-700 dark:bg-slate-800/90 dark:text-slate-200">
                   <tr>
                     <th className="px-4 py-3 font-semibold">Nome</th>
-                    <th className="px-4 py-3 font-semibold">Entrada</th>
+                    <th className="px-4 py-3 font-semibold">Mês entrada</th>
                     <th className="px-4 py-3 font-semibold">Saldo</th>
                     <th className="px-4 py-3 font-semibold">Meses (estim.)</th>
                   </tr>
@@ -253,7 +255,7 @@ export default async function ConsultaPage({ searchParams }: ConsultaPageProps) 
                           </Link>
                         </td>
                         <td className="px-4 py-3 tabular-nums text-slate-600 dark:text-slate-400">
-                          {dateFmt.format(u.entryDate)}
+                          {entryMonthLabel(u.entryDate)}
                         </td>
                         <td className="px-4 py-3 tabular-nums font-medium">
                           {b > 0 ? (

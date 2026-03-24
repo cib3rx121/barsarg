@@ -17,9 +17,9 @@ export default function Home() {
       <div className="flex min-h-[calc(100dvh-4rem)] items-center justify-center py-8">
         <main className={`${card} text-center`}>
           {hasBrandLogo() ? (
-            <div className="mb-6 flex justify-center">
-              <span className="flex h-28 w-28 items-center justify-center overflow-hidden rounded-2xl border border-slate-200/80 bg-white/90 shadow-md dark:border-slate-600 dark:bg-slate-950/40 sm:h-32 sm:w-32">
-                <BrandLogo size={112} priority className="p-2 sm:p-2.5" />
+            <div className="mb-8 flex justify-center">
+              <span className="flex h-40 w-40 items-center justify-center overflow-hidden rounded-2xl border border-slate-200/80 bg-white/90 shadow-md dark:border-slate-600 dark:bg-slate-950/40 sm:h-44 sm:w-44">
+                <BrandLogo size={152} priority className="p-2.5 sm:p-3" />
               </span>
             </div>
           ) : null}

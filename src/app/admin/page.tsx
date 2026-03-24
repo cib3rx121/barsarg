@@ -9,7 +9,10 @@ import {
   computeBalancesForUsers,
   firstChargeMonthKey,
 } from "@/lib/balance";
-import { formatMonthKeyLongPt } from "@/lib/month-keys";
+import {
+  formatMonthKeyLongPt,
+  monthKeyFromUtcDate,
+} from "@/lib/month-keys";
 import { BrandLogo, hasBrandLogo } from "@/components/BrandLogo";
 import { CopyConsultaUrlButton } from "@/components/CopyConsultaUrlButton";
 import { requireAdminSession } from "@/lib/auth-admin";
@@ -27,12 +30,6 @@ type AdminPageProps = {
 const eurFmt = new Intl.NumberFormat("pt-PT", {
   style: "currency",
   currency: "EUR",
-});
-
-const dateFmt = new Intl.DateTimeFormat("pt-PT", {
-  day: "2-digit",
-  month: "short",
-  year: "numeric",
 });
 
 const dateTimeFmt = new Intl.DateTimeFormat("pt-PT", {
@@ -76,6 +73,7 @@ export default async function AdminPage({ searchParams }: AdminPageProps) {
     payErr === "4"
       ? "Indique um valor válido (EUR) e, se usar mês, o formato AAAA-MM."
       : null;
+  const hasDebtFormError = billingErr === "10";
 
   const [users, quotaRow] = await Promise.all([
     prisma.user.findMany({
@@ -98,12 +96,14 @@ export default async function AdminPage({ searchParams }: AdminPageProps) {
 
   const serializedMembers = users.map((u) => {
     const d = balanceByUser.get(u.id);
+    const entryMk = monthKeyFromUtcDate(u.entryDate);
+    const createdMk = monthKeyFromUtcDate(u.createdAt);
     return {
       id: u.id,
       name: u.name,
-      entryDate: u.entryDate.toISOString().slice(0, 10),
-      chargeStartDate: u.chargeStartDate
-        ? u.chargeStartDate.toISOString().slice(0, 10)
+      entryMonth: entryMk,
+      chargeStartMonth: u.chargeStartDate
+        ? monthKeyFromUtcDate(u.chargeStartDate)
         : null,
       active: u.active,
       balanceCents: d?.balanceCents ?? 0,
@@ -115,8 +115,8 @@ export default async function AdminPage({ searchParams }: AdminPageProps) {
           chargeStartDate: u.chargeStartDate,
         }),
       ),
-      entryLabel: dateFmt.format(u.entryDate),
-      createdAtLabel: dateTimeFmt.format(u.createdAt),
+      entryLabel: formatMonthKeyLongPt(entryMk),
+      createdMonthLabel: formatMonthKeyLongPt(createdMk),
     };
   });
 
@@ -298,7 +298,7 @@ export default async function AdminPage({ searchParams }: AdminPageProps) {
 
           {hasUserFormError ? (
             <p className="mt-4 rounded-lg border border-red-200 bg-red-50 px-3 py-2 text-sm text-red-800 dark:border-red-900/50 dark:bg-red-950/35 dark:text-red-200">
-              Verifique nome e datas do novo associado.
+              Verifique o nome e os meses (entrada e cobrança) do novo associado.
             </p>
           ) : null}
           {hasChargeStartBeforeEntry ? (
@@ -319,6 +319,11 @@ export default async function AdminPage({ searchParams }: AdminPageProps) {
           {payErrorMessage ? (
             <p className="mt-4 rounded-lg border border-red-200 bg-red-50 px-3 py-2 text-sm text-red-800 dark:border-red-900/50 dark:bg-red-950/35 dark:text-red-200">
               {payErrorMessage}
+            </p>
+          ) : null}
+          {hasDebtFormError ? (
+            <p className="mt-4 rounded-lg border border-red-200 bg-red-50 px-3 py-2 text-sm text-red-800 dark:border-red-900/50 dark:bg-red-950/35 dark:text-red-200">
+              Indique um valor em euros positivo para a dívida manual (ex.: 20,00).
             </p>
           ) : null}
 

@@ -4,6 +4,7 @@ import { useEffect, useState } from "react";
 import {
   createUser,
   deleteMember,
+  recordDebtAdjustment,
   recordPayment,
   updateMember,
   waiveMonthRange,
@@ -12,15 +13,18 @@ import {
 export type SerializedMember = {
   id: string;
   name: string;
-  entryDate: string;
-  chargeStartDate: string | null;
+  /** AAAA-MM */
+  entryMonth: string;
+  chargeStartMonth: string | null;
   active: boolean;
   balanceCents: number;
   estimatedMonths: number;
   quotaNotConfigured: boolean;
   chargeMonthLabel: string;
+  /** Texto do mês de entrada (lista) */
   entryLabel: string;
-  createdAtLabel: string;
+  /** Mês de registo no sistema */
+  createdMonthLabel: string;
 };
 
 const inpt =
@@ -102,12 +106,12 @@ export function AdminAssociatesWorkspace({
             htmlFor="new-entry"
             className="mb-1.5 block text-sm font-medium text-slate-700 dark:text-slate-300"
           >
-            Entrada
+            Mês de entrada
           </label>
           <input
             id="new-entry"
             name="entryDate"
-            type="date"
+            type="month"
             required
             className={inpt}
           />
@@ -117,12 +121,12 @@ export function AdminAssociatesWorkspace({
             htmlFor="new-charge"
             className="mb-1.5 block text-sm font-medium text-slate-700 dark:text-slate-300"
           >
-            Cobrança desde (opc.)
+            Mês de início da cobrança (opc.)
           </label>
           <input
             id="new-charge"
             name="chargeStartDate"
-            type="date"
+            type="month"
             className={inpt}
           />
         </div>
@@ -155,7 +159,7 @@ export function AdminAssociatesWorkspace({
                           {m.name}
                         </span>
                         <p className="mt-1 text-xs text-slate-500 dark:text-slate-400">
-                          Entrada {m.entryLabel} · Cobrança {m.chargeMonthLabel}
+                          Entrada: {m.entryLabel} · Cobrança: {m.chargeMonthLabel}
                         </p>
                       </div>
                       <div className="shrink-0 text-right">
@@ -191,7 +195,7 @@ export function AdminAssociatesWorkspace({
               <thead className="bg-slate-100/90 text-slate-700 dark:bg-slate-800/90 dark:text-slate-200">
                 <tr>
                   <th className="px-4 py-3.5 font-semibold">Associado</th>
-                  <th className="px-4 py-3.5 font-semibold">Entrada</th>
+                  <th className="px-4 py-3.5 font-semibold">Mês entrada</th>
                   <th className="px-4 py-3.5 font-semibold">Cobrança</th>
                   <th className="px-4 py-3.5 font-semibold">Saldo</th>
                   <th className="px-4 py-3.5 font-semibold">Est.</th>
@@ -282,7 +286,7 @@ export function AdminAssociatesWorkspace({
                   </span>
                 </p>
                 <p className="text-xs text-slate-500 dark:text-slate-500">
-                  Registo: {selected.createdAtLabel}
+                  Registo (mês): {selected.createdMonthLabel}
                 </p>
                 <button
                   type="button"
@@ -330,24 +334,24 @@ export function AdminAssociatesWorkspace({
                 </div>
                 <div>
                   <label className="mb-1 block text-sm font-medium text-slate-700 dark:text-slate-300">
-                    Data de entrada
+                    Mês de entrada
                   </label>
                   <input
                     name="entryDate"
-                    type="date"
+                    type="month"
                     required
-                    defaultValue={selected.entryDate}
+                    defaultValue={selected.entryMonth}
                     className={inpt}
                   />
                 </div>
                 <div>
                   <label className="mb-1 block text-sm font-medium text-slate-700 dark:text-slate-300">
-                    Início da cobrança (opcional)
+                    Mês de início da cobrança (opcional)
                   </label>
                   <input
                     name="chargeStartDate"
-                    type="date"
-                    defaultValue={selected.chargeStartDate ?? ""}
+                    type="month"
+                    defaultValue={selected.chargeStartMonth ?? ""}
                     className={inpt}
                   />
                 </div>
@@ -397,6 +401,47 @@ export function AdminAssociatesWorkspace({
                 </div>
                 <button type="submit" className={`${btnSecondary} w-full`}>
                   Registar pagamento
+                </button>
+              </form>
+
+              <div className="my-6 border-t border-slate-200 dark:border-slate-700" />
+
+              <p className={sectionTitle}>Dívida manual</p>
+              <p className="mt-1 text-xs text-slate-500 dark:text-slate-500">
+                Aumenta o que o associado deve (ex.: 20 € em dívida), sem calcular meses.
+              </p>
+              <form
+                key={`debt-${selected.id}`}
+                action={recordDebtAdjustment}
+                className="mt-3 space-y-3"
+              >
+                <input type="hidden" name="debtUserId" value={selected.id} />
+                <div>
+                  <label className="mb-1 block text-sm font-medium text-slate-700 dark:text-slate-300">
+                    Valor em dívida (EUR)
+                  </label>
+                  <input
+                    name="debtAmountEur"
+                    type="text"
+                    inputMode="decimal"
+                    required
+                    placeholder="20,00"
+                    className={inpt}
+                  />
+                </div>
+                <div>
+                  <label className="mb-1 block text-sm font-medium text-slate-700 dark:text-slate-300">
+                    Nota (opcional)
+                  </label>
+                  <input
+                    name="debtNote"
+                    type="text"
+                    placeholder="Ex.: dívida anterior ao sistema"
+                    className={inpt}
+                  />
+                </div>
+                <button type="submit" className={`${btnSecondary} w-full`}>
+                  Adicionar à dívida
                 </button>
               </form>
 

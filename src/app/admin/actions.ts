@@ -20,13 +20,23 @@ async function assertAdmin() {
   }
 }
 
-function parseEntryDate(raw: string): Date | null {
-  const parts = raw.trim().split("-").map(Number);
-  if (parts.length !== 3 || parts.some((n) => Number.isNaN(n))) {
-    return null;
+/** Aceita AAAA-MM (preferido) ou AAAA-MM-DD (legado). Mês civil = dia 1 UTC. */
+function parseEntryDateFromForm(raw: string): Date | null {
+  const t = raw.trim();
+  if (!t) return null;
+  const ym = /^(\d{4})-(\d{2})$/.exec(t);
+  if (ym) {
+    const y = Number(ym[1]);
+    const m = Number(ym[2]);
+    if (m < 1 || m > 12) return null;
+    return new Date(Date.UTC(y, m - 1, 1));
   }
-  const [y, m, d] = parts;
-  return new Date(Date.UTC(y, m - 1, d));
+  const parts = t.split("-").map(Number);
+  if (parts.length === 3 && !parts.some((n) => Number.isNaN(n))) {
+    const [y, m, d] = parts;
+    return new Date(Date.UTC(y, m - 1, d));
+  }
+  return null;
 }
 
 export async function createUser(formData: FormData) {
@@ -39,7 +49,7 @@ export async function createUser(formData: FormData) {
     redirect("/admin?error=1");
   }
 
-  const entryDate = parseEntryDate(entryRaw);
+  const entryDate = parseEntryDateFromForm(entryRaw);
   if (!entryDate) {
     redirect("/admin?error=1");
   }
@@ -47,7 +57,7 @@ export async function createUser(formData: FormData) {
   const chargeStartRaw = String(formData.get("chargeStartDate") ?? "").trim();
   let chargeStartDate: Date | null = null;
   if (chargeStartRaw) {
-    const parsed = parseEntryDate(chargeStartRaw);
+    const parsed = parseEntryDateFromForm(chargeStartRaw);
     if (!parsed) {
       redirect("/admin?error=1");
     }
@@ -89,14 +99,14 @@ export async function updateMember(formData: FormData) {
     redirect("/admin?error=1");
   }
 
-  const entryDate = parseEntryDate(entryRaw);
+  const entryDate = parseEntryDateFromForm(entryRaw);
   if (!entryDate) {
     redirect("/admin?error=1");
   }
 
   let chargeStartDate: Date | null = null;
   if (chargeRaw) {
-    const parsed = parseEntryDate(chargeRaw);
+    const parsed = parseEntryDateFromForm(chargeRaw);
     if (!parsed) {
       redirect("/admin?error=1");
     }
@@ -202,6 +212,35 @@ export async function saveGlobalQuota(formData: FormData) {
   });
 
   await backfillMissingMonthlyCharges();
+
+  revalidatePath("/admin");
+  revalidatePath("/consulta");
+  redirect("/admin");
+}
+
+/** Aumenta a dívida (ex.: «deve 20 €») com um lançamento de ajuste. */
+export async function recordDebtAdjustment(formData: FormData) {
+  await assertAdmin();
+
+  const userId = String(formData.get("debtUserId") ?? "").trim();
+  const amountCents = parseAmountEurToCents(
+    String(formData.get("debtAmountEur") ?? ""),
+  );
+  const noteRaw = String(formData.get("debtNote") ?? "").trim();
+
+  if (!userId || amountCents === null || amountCents <= 0) {
+    redirect("/admin?error=10");
+  }
+
+  await prisma.ledgerEntry.create({
+    data: {
+      userId,
+      deltaCents: amountCents,
+      kind: "ADJUSTMENT",
+      monthKey: null,
+      note: noteRaw ? noteRaw : "Dívida manual",
+    },
+  });
 
   revalidatePath("/admin");
   revalidatePath("/consulta");
