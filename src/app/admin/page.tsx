@@ -204,6 +204,9 @@ export default async function AdminPage({ searchParams }: AdminPageProps) {
                 Terminar sessão
               </button>
             </form>
+            <Link href="/admin/convivios" className={btnSecondary}>
+              Convívios
+            </Link>
           </div>
             </div>
           </div>
@@ -222,6 +225,10 @@ export default async function AdminPage({ searchParams }: AdminPageProps) {
             <a href="#seguranca" className={linkSubtle}>
               Segurança
             </a>
+            <span className="text-slate-300 dark:text-slate-600">·</span>
+            <Link href="/admin/convivios" className={linkSubtle}>
+              Convívios
+            </Link>
             <span className="text-slate-300 dark:text-slate-600">·</span>
             <a href="#associados" className={linkSubtle}>
               Associados
@@ -245,6 +252,9 @@ export default async function AdminPage({ searchParams }: AdminPageProps) {
               <a href="#seguranca" className={mobileNavBtn}>
                 Segurança
               </a>
+              <Link href="/admin/convivios" className={mobileNavBtn}>
+                Convívios
+              </Link>
               <a href="#associados" className={mobileNavBtn}>
                 Associados
               </a>
@@ -785,7 +795,7 @@ export default async function AdminPage({ searchParams }: AdminPageProps) {
       </div>
 
       <div className="fixed inset-x-0 bottom-0 z-40 border-t border-slate-200/80 bg-white/95 px-3 py-2 backdrop-blur md:hidden dark:border-slate-700/80 dark:bg-slate-900/95">
-        <div className="mx-auto grid max-w-5xl grid-cols-4 gap-2">
+        <div className="mx-auto grid max-w-5xl grid-cols-5 gap-2">
           <a href="#definicoes" className={mobileNavBtn}>
             QR/Cota
           </a>
@@ -795,6 +805,9 @@ export default async function AdminPage({ searchParams }: AdminPageProps) {
           <a href="#seguranca" className={mobileNavBtn}>
             Segurança
           </a>
+          <Link href="/admin/convivios" className={mobileNavBtn}>
+            Convívios
+          </Link>
           <a href="#associados" className={mobileNavBtn}>
             Associados
           </a>

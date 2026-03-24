@@ -19,6 +19,7 @@ import {
 import { prisma } from "@/lib/prisma";
 import { QUOTA_SETTINGS_ID } from "@/lib/quota";
 import { hashSecret } from "@/lib/secret-hash";
+import { computeEventSplit } from "@/lib/events";
 
 async function assertAdmin() {
   const session = (await cookies()).get("barsarg_admin_session")?.value;
@@ -571,4 +572,172 @@ export async function closeMonthSnapshot(formData: FormData) {
 
   revalidatePath("/admin");
   redirect("/admin");
+}
+
+export async function createEvent(formData: FormData) {
+  await assertAdmin();
+
+  const title = String(formData.get("eventTitle") ?? "").trim();
+  const description = String(formData.get("eventDescription") ?? "").trim();
+  const eventDateRaw = String(formData.get("eventDate") ?? "").trim();
+
+  if (!title) {
+    redirect("/admin/convivios?error=1");
+  }
+
+  const eventDate = eventDateRaw ? new Date(eventDateRaw) : null;
+  const event = await prisma.event.create({
+    data: {
+      title,
+      description: description || null,
+      eventDate: eventDate && !Number.isNaN(eventDate.getTime()) ? eventDate : null,
+      status: "OPEN",
+    },
+  });
+
+  const users = await prisma.user.findMany({
+    where: { active: true },
+    select: { id: true },
+  });
+  if (users.length > 0) {
+    await prisma.eventParticipant.createMany({
+      data: users.map((u) => ({
+        eventId: event.id,
+        userId: u.id,
+        status: "NO",
+        splitProfile: "ALL",
+      })),
+    });
+  }
+
+  await logAdminEvent({
+    action: "CREATE",
+    entity: "EVENT",
+    entityId: event.id,
+    note: `Convívio criado: ${title}`,
+  });
+
+  revalidatePath("/admin/convivios");
+  revalidatePath("/consulta");
+  redirect("/admin/convivios");
+}
+
+export async function saveEventCosts(formData: FormData) {
+  await assertAdmin();
+  const eventId = String(formData.get("eventId") ?? "").trim();
+  const foodCents = parseAmountEurToCents(String(formData.get("foodEur") ?? "")) ?? 0;
+  const drinkCents = parseAmountEurToCents(String(formData.get("drinkEur") ?? "")) ?? 0;
+  const otherCents = parseAmountEurToCents(String(formData.get("otherEur") ?? "")) ?? 0;
+  if (!eventId || foodCents < 0 || drinkCents < 0 || otherCents < 0) {
+    redirect("/admin/convivios?error=2");
+  }
+
+  await prisma.event.update({
+    where: { id: eventId },
+    data: { foodCents, drinkCents, otherCents },
+  });
+
+  await logAdminEvent({
+    action: "UPDATE",
+    entity: "EVENT_COSTS",
+    entityId: eventId,
+    note: `Custos atualizados (F:${foodCents} B:${drinkCents} O:${otherCents})`,
+  });
+
+  revalidatePath("/admin/convivios");
+  redirect("/admin/convivios");
+}
+
+export async function closeEventRegistrations(formData: FormData) {
+  await assertAdmin();
+  const eventId = String(formData.get("eventId") ?? "").trim();
+  if (!eventId) {
+    redirect("/admin/convivios?error=3");
+  }
+  await prisma.event.update({
+    where: { id: eventId },
+    data: { status: "CLOSED" },
+  });
+  await logAdminEvent({
+    action: "UPDATE",
+    entity: "EVENT",
+    entityId: eventId,
+    note: "Inscrições encerradas",
+  });
+  revalidatePath("/admin/convivios");
+  revalidatePath("/consulta");
+  redirect("/admin/convivios");
+}
+
+export async function applyEventSettlement(formData: FormData) {
+  await assertAdmin();
+  const eventId = String(formData.get("eventId") ?? "").trim();
+  if (!eventId) {
+    redirect("/admin/convivios?error=4");
+  }
+
+  const event = await prisma.event.findUnique({
+    where: { id: eventId },
+    select: {
+      id: true,
+      title: true,
+      status: true,
+      foodCents: true,
+      drinkCents: true,
+      otherCents: true,
+      participants: {
+        select: { userId: true, status: true, splitProfile: true },
+      },
+      charges: { select: { id: true }, take: 1 },
+    },
+  });
+  if (!event || event.charges.length > 0) {
+    redirect("/admin/convivios?error=4");
+  }
+
+  const split = computeEventSplit({
+    participants: event.participants,
+    foodCents: event.foodCents,
+    drinkCents: event.drinkCents,
+    otherCents: event.otherCents,
+  });
+  const userIds = [...split.keys()];
+  if (userIds.length === 0) {
+    redirect("/admin/convivios?error=4");
+  }
+
+  for (const userId of userIds) {
+    const amountCents = split.get(userId) ?? 0;
+    if (amountCents <= 0) continue;
+
+    await prisma.ledgerEntry.create({
+      data: {
+        userId,
+        deltaCents: amountCents,
+        kind: "ADJUSTMENT",
+        monthKey: null,
+        note: `Convívio: ${event.title}`,
+      },
+    });
+    await prisma.eventCharge.create({
+      data: { eventId, userId, amountCents },
+    });
+  }
+
+  await prisma.event.update({
+    where: { id: eventId },
+    data: { status: "SETTLED" },
+  });
+
+  await logAdminEvent({
+    action: "CREATE",
+    entity: "EVENT_SETTLEMENT",
+    entityId: eventId,
+    note: `Convívio liquidado: ${event.title}`,
+  });
+
+  revalidatePath("/admin/convivios");
+  revalidatePath("/admin");
+  revalidatePath("/consulta");
+  redirect("/admin/convivios");
 }

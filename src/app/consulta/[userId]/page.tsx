@@ -8,6 +8,9 @@ import {
 } from "@/lib/balance";
 import { PublicShell } from "@/components/PublicShell";
 import { requireConsultaSession } from "@/lib/auth-consulta";
+import { splitProfileLabel } from "@/lib/events";
+import { prisma } from "@/lib/prisma";
+import { updateEventParticipation } from "@/app/consulta/actions";
 
 const eurFmt = new Intl.NumberFormat("pt-PT", {
   style: "currency",
@@ -61,6 +64,17 @@ export default async function ConsultaUserDetailPage({ params }: PageProps) {
   } = data;
 
   const b = balanceCents;
+  const openEvents = await prisma.event.findMany({
+    where: { status: "OPEN" },
+    orderBy: { createdAt: "desc" },
+    include: {
+      participants: {
+        where: { userId },
+        select: { status: true, splitProfile: true },
+      },
+    },
+    take: 10,
+  });
 
   return (
     <PublicShell>
@@ -106,6 +120,60 @@ export default async function ConsultaUserDetailPage({ params }: PageProps) {
           <p className="mt-4 rounded-xl border border-amber-200/80 bg-amber-50 px-4 py-3 text-sm text-amber-950 dark:border-amber-900/40 dark:bg-amber-950/25 dark:text-amber-100">
             A administração ainda não definiu a cota mensal. O saldo mantém-se correto.
           </p>
+        ) : null}
+
+        {openEvents.length > 0 ? (
+          <section className="mt-6 rounded-2xl border border-slate-200/80 bg-slate-50/70 p-4 dark:border-slate-700/80 dark:bg-slate-800/35">
+            <h2 className="text-sm font-semibold uppercase tracking-wide text-slate-700 dark:text-slate-200">
+              Convívios
+            </h2>
+            <p className="mt-1 text-xs text-slate-500 dark:text-slate-400">
+              Indique se participa e como entra na divisão da conta.
+            </p>
+            <div className="mt-3 space-y-3">
+              {openEvents.map((ev) => {
+                const current = ev.participants[0];
+                const currentStatus = current?.status ?? "NO";
+                const currentProfile = current?.splitProfile ?? "ALL";
+                return (
+                  <form
+                    key={ev.id}
+                    action={updateEventParticipation}
+                    className="rounded-xl border border-slate-200/80 bg-white/80 p-3 dark:border-slate-700/80 dark:bg-slate-900/35"
+                  >
+                    <input type="hidden" name="userId" value={userId} />
+                    <input type="hidden" name="eventId" value={ev.id} />
+                    <p className="font-medium text-slate-900 dark:text-slate-100">{ev.title}</p>
+                    {ev.description ? (
+                      <p className="mt-1 text-xs text-slate-600 dark:text-slate-400">{ev.description}</p>
+                    ) : null}
+                    <div className="mt-3 grid gap-2 sm:grid-cols-3">
+                      <select name="status" defaultValue={currentStatus} className="rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm dark:border-slate-600 dark:bg-slate-950/40">
+                        <option value="YES">Vou participar</option>
+                        <option value="NO">Não vou</option>
+                      </select>
+                      <select
+                        name="splitProfile"
+                        defaultValue={currentProfile}
+                        className="rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm dark:border-slate-600 dark:bg-slate-950/40"
+                      >
+                        <option value="ALL">Tudo</option>
+                        <option value="FOOD_ONLY">Só comida</option>
+                        <option value="NO_DRINK">Sem bebida</option>
+                      </select>
+                      <button type="submit" className="rounded-lg bg-emerald-600 px-3 py-2 text-sm font-semibold text-white hover:bg-emerald-500">
+                        Guardar
+                      </button>
+                    </div>
+                    <p className="mt-2 text-xs text-slate-500 dark:text-slate-400">
+                      Atual: {currentStatus === "YES" ? "Participa" : "Não participa"} ·{" "}
+                      {splitProfileLabel(currentProfile)}
+                    </p>
+                  </form>
+                );
+              })}
+            </div>
+          </section>
         ) : null}
 
         {ledgerEntries.length === 0 ? (

@@ -88,3 +88,50 @@ model MonthClosure {
   totalReceivedCents Int
   closedAt          DateTime @default(now())
 }
+
+model Event {
+  id          String             @id @default(uuid()) @db.Uuid
+  title       String
+  description String?
+  eventDate   DateTime?
+  status      String             @default("OPEN")
+  foodCents   Int                @default(0)
+  drinkCents  Int                @default(0)
+  otherCents  Int                @default(0)
+  createdAt   DateTime           @default(now())
+
+  participants EventParticipant[]
+  charges      EventCharge[]
+
+  @@index([status, createdAt])
+}
+
+model EventParticipant {
+  id           String   @id @default(uuid()) @db.Uuid
+  eventId      String   @db.Uuid
+  userId       String   @db.Uuid
+  status       String   @default("YES")
+  splitProfile String   @default("ALL")
+  note         String?
+  createdAt    DateTime @default(now())
+
+  event Event @relation(fields: [eventId], references: [id], onDelete: Cascade)
+  user  User  @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([eventId, userId])
+  @@index([eventId, status])
+}
+
+model EventCharge {
+  id         String   @id @default(uuid()) @db.Uuid
+  eventId    String   @db.Uuid
+  userId     String   @db.Uuid
+  amountCents Int
+  createdAt  DateTime @default(now())
+
+  event Event @relation(fields: [eventId], references: [id], onDelete: Cascade)
+  user  User  @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([eventId, userId])
+  @@index([eventId])
+}
