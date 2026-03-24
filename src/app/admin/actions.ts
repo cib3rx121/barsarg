@@ -604,29 +604,30 @@ export async function createEvent(formData: FormData) {
 
   const title = String(formData.get("eventTitle") ?? "").trim();
   const description = String(formData.get("eventDescription") ?? "").trim();
-  const eventMonthRaw = String(formData.get("eventMonthKey") ?? "").trim();
   const eventDateRaw = String(formData.get("eventDate") ?? "").trim();
 
-  if (!title) {
+  if (!title || !eventDateRaw) {
     redirect("/admin/convivios?error=1");
   }
 
-  let eventDate: Date | null = null;
-  const parsedMonth = parseMonthKey(eventMonthRaw);
-  if (parsedMonth) {
-    const [y, m] = parsedMonth.split("-").map(Number);
-    eventDate = new Date(Date.UTC(y, m - 1, 1));
-  } else if (eventDateRaw) {
-    const legacyDate = new Date(eventDateRaw);
-    if (!Number.isNaN(legacyDate.getTime())) {
-      eventDate = legacyDate;
-    }
+  const parts = eventDateRaw.split("-").map(Number);
+  if (
+    parts.length !== 3 ||
+    parts.some((n) => Number.isNaN(n))
+  ) {
+    redirect("/admin/convivios?error=1");
   }
+  const [y, m, d] = parts;
+  const eventDate = new Date(Date.UTC(y, m - 1, d));
+  if (Number.isNaN(eventDate.getTime())) {
+    redirect("/admin/convivios?error=1");
+  }
+
   const event = await prisma.event.create({
     data: {
       title,
       description: description || null,
-      eventDate: eventDate && !Number.isNaN(eventDate.getTime()) ? eventDate : null,
+      eventDate,
       status: "OPEN",
     },
   });

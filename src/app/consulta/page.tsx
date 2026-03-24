@@ -24,6 +24,11 @@ const eurFmt = new Intl.NumberFormat("pt-PT", {
   style: "currency",
   currency: "EUR",
 });
+const dateFmt = new Intl.DateTimeFormat("pt-PT", {
+  day: "2-digit",
+  month: "2-digit",
+  year: "numeric",
+});
 
 function entryMonthLabel(entryDate: Date) {
   return formatMonthKeyLongPt(monthKeyFromUtcDate(entryDate));
@@ -131,8 +136,8 @@ export default async function ConsultaPage({ searchParams }: ConsultaPageProps) 
   const settingsRow = await getQuotaSettingsRow();
   const openEvents = await prisma.event.findMany({
     where: { status: "OPEN" },
-    orderBy: { createdAt: "desc" },
-    select: { id: true, title: true },
+    orderBy: [{ eventDate: "asc" }, { createdAt: "desc" }],
+    select: { id: true, title: true, eventDate: true },
     take: 3,
   });
 
@@ -182,7 +187,10 @@ export default async function ConsultaPage({ searchParams }: ConsultaPageProps) 
             </p>
             <ul className="mt-2 list-disc space-y-1 pl-5 text-xs">
               {openEvents.map((ev) => (
-                <li key={ev.id}>{ev.title}</li>
+                <li key={ev.id}>
+                  {ev.title}
+                  {ev.eventDate ? ` (${dateFmt.format(ev.eventDate)})` : ""}
+                </li>
               ))}
             </ul>
           </div>

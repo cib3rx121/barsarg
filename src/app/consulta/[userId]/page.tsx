@@ -24,6 +24,11 @@ const dateTimeFmt = new Intl.DateTimeFormat("pt-PT", {
   hour: "2-digit",
   minute: "2-digit",
 });
+const dateFmt = new Intl.DateTimeFormat("pt-PT", {
+  day: "2-digit",
+  month: "2-digit",
+  year: "numeric",
+});
 
 const card =
   "mx-auto w-full max-w-2xl rounded-2xl border border-slate-200/80 bg-white/90 p-6 shadow-xl shadow-slate-200/40 backdrop-blur-sm sm:rounded-3xl sm:p-8 dark:border-slate-700/80 dark:bg-slate-900/85 dark:shadow-black/40";
@@ -66,7 +71,7 @@ export default async function ConsultaUserDetailPage({ params }: PageProps) {
   const b = balanceCents;
   const openEvents = await prisma.event.findMany({
     where: { status: "OPEN" },
-    orderBy: { createdAt: "desc" },
+    orderBy: [{ eventDate: "asc" }, { createdAt: "desc" }],
     include: {
       participants: {
         where: { userId },
@@ -128,7 +133,7 @@ export default async function ConsultaUserDetailPage({ params }: PageProps) {
               Convívios
             </h2>
             <p className="mt-1 text-xs text-slate-500 dark:text-slate-400">
-              Indique se participa e como entra na divisão da conta.
+              Escolha se participa e se entra em Tudo ou Só comida.
             </p>
             <div className="mt-3 space-y-3">
               {openEvents.map((ev) => {
@@ -144,6 +149,11 @@ export default async function ConsultaUserDetailPage({ params }: PageProps) {
                     <input type="hidden" name="userId" value={userId} />
                     <input type="hidden" name="eventId" value={ev.id} />
                     <p className="font-medium text-slate-900 dark:text-slate-100">{ev.title}</p>
+                    {ev.eventDate ? (
+                      <p className="mt-1 text-xs text-slate-500 dark:text-slate-400">
+                        Data: {dateFmt.format(ev.eventDate)}
+                      </p>
+                    ) : null}
                     {ev.description ? (
                       <p className="mt-1 text-xs text-slate-600 dark:text-slate-400">{ev.description}</p>
                     ) : null}

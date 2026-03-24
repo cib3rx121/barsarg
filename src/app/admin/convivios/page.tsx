@@ -11,12 +11,15 @@ import {
 import { requireAdminSession } from "@/lib/auth-admin";
 import { computeEventSplit, splitProfileLabel } from "@/lib/events";
 import { prisma } from "@/lib/prisma";
-import { MonthYearField } from "@/components/MonthYearField";
-import { currentMonthKeyUtc, formatMonthKeyLongPt, monthKeyFromUtcDate } from "@/lib/month-keys";
 
 const eurFmt = new Intl.NumberFormat("pt-PT", {
   style: "currency",
   currency: "EUR",
+});
+const dateFmt = new Intl.DateTimeFormat("pt-PT", {
+  day: "2-digit",
+  month: "2-digit",
+  year: "numeric",
 });
 
 const card =
@@ -37,7 +40,7 @@ export default async function ConviviosAdminPage() {
   ]);
 
   const events = await prisma.event.findMany({
-    orderBy: [{ status: "asc" }, { createdAt: "desc" }],
+    orderBy: [{ status: "asc" }, { eventDate: "asc" }, { createdAt: "desc" }],
     include: {
       participants: {
         include: { user: { select: { name: true } } },
@@ -45,9 +48,6 @@ export default async function ConviviosAdminPage() {
       charges: true,
     },
   });
-  const currentMonth = currentMonthKeyUtc();
-  const currentYear = new Date().getUTCFullYear();
-
   return (
     <div className="relative min-h-screen overflow-x-hidden bg-gradient-to-br from-slate-50 via-emerald-50/35 to-slate-100 pb-20 dark:from-slate-950 dark:via-emerald-950/25 dark:to-slate-900">
       <div className="relative mx-auto w-full max-w-5xl px-3 py-6 sm:px-6 sm:py-10">
@@ -59,7 +59,7 @@ export default async function ConviviosAdminPage() {
             Convívios
           </h1>
           <p className="mt-2 text-sm text-slate-600 dark:text-slate-400">
-            Crie anúncios de convívio, recolha participações e liquide a conta por perfis.
+            Crie convívios, recolha respostas e liquide a conta de forma simples.
           </p>
           <p className="mt-2 text-xs text-slate-500 dark:text-slate-400">
             Associados ativos: {usersCount} · Convívios liquidados: {settledCount}
@@ -79,18 +79,9 @@ export default async function ConviviosAdminPage() {
             <input name="eventTitle" required placeholder="Título (ex.: Jantar de sexta)" className={inpt} />
             <div>
               <label className="mb-1 block text-sm font-medium text-slate-700 dark:text-slate-300">
-                Mês do convívio
+                Dia do convívio
               </label>
-              <MonthYearField
-                idPrefix="new-event-month"
-                name="eventMonthKey"
-                required
-                defaultValue={currentMonth}
-                className={inpt}
-                yearStart={currentYear - 3}
-                yearEnd={currentYear + 3}
-                showSelectionSummary={false}
-              />
+              <input name="eventDate" type="date" required className={inpt} />
             </div>
             <textarea
               name="eventDescription"
@@ -135,7 +126,7 @@ export default async function ConviviosAdminPage() {
                       </p>
                       {event.eventDate ? (
                         <p className="mt-1 text-xs text-slate-500 dark:text-slate-400">
-                          Mês: {formatMonthKeyLongPt(monthKeyFromUtcDate(event.eventDate))}
+                          Data: {dateFmt.format(event.eventDate)}
                         </p>
                       ) : null}
                       {event.description ? (
