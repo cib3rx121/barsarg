@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { useMemo, useState } from "react";
 
 const MONTH_OPTIONS = [
   { value: "01", label: "Janeiro" },
@@ -71,12 +71,6 @@ export function MonthYearField({
   const parsedDefault = parseMonthKey(defaultValue);
   const [year, setYear] = useState(parsedDefault.year);
   const [month, setMonth] = useState(parsedDefault.month);
-
-  useEffect(() => {
-    const parsed = parseMonthKey(defaultValue);
-    setYear(parsed.year);
-    setMonth(parsed.month);
-  }, [defaultValue]);
 
   const hiddenValue = year && month ? `${year}-${month}` : "";
   const monthLabel = MONTH_OPTIONS.find((m) => m.value === month)?.label;

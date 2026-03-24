@@ -501,6 +501,7 @@ export function AdminAssociatesWorkspace({
                     </button>
                   </div>
                   <MonthYearField
+                    key={`pay-month-field-${selected.id}-${quickPayMonth || "empty"}`}
                     idPrefix={`pay-month-${selected.id}`}
                     name="payMonthKey"
                     allowEmpty
