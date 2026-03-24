@@ -260,8 +260,9 @@ async function uploadInvoiceToBlob(pathname: string, file: File): Promise<string
     });
     return blob.url;
   } catch {
-    // Compatibilidade com stores privadas: tenta sem forçar "public".
+    // Compatibilidade com stores privadas: tenta com acesso privado.
     const blob = await put(pathname, file, {
+      access: "private",
       addRandomSuffix: true,
     });
     return blob.url;
