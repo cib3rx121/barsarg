@@ -695,7 +695,7 @@ export async function saveEventCosts(formData: FormData) {
   const drinkCents = parseAmountEurToCents(String(formData.get("drinkEur") ?? "")) ?? 0;
   const otherCents = parseAmountEurToCents(String(formData.get("otherEur") ?? "")) ?? 0;
   const invoiceUrlRaw = String(formData.get("invoiceUrl") ?? "").trim();
-  let invoiceUrlFromText: string | null = invoiceUrlRaw ? invoiceUrlRaw : null;
+  const invoiceUrlFromText: string | null = invoiceUrlRaw ? invoiceUrlRaw : null;
   if (invoiceUrlFromText) {
     try {
       const parsed = new URL(invoiceUrlFromText);
