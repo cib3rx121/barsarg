@@ -43,6 +43,8 @@ const btnMuted =
 
 const btnDanger =
   "touch-target inline-flex min-h-12 w-full items-center justify-center rounded-xl border border-red-300 bg-red-50 px-4 py-2.5 text-sm font-semibold text-red-800 transition hover:bg-red-100 dark:border-red-900 dark:bg-red-950/40 dark:text-red-200";
+const chipBtn =
+  "inline-flex min-h-10 items-center justify-center rounded-full border px-3 py-1.5 text-xs font-semibold transition";
 
 const sectionTitle =
   "text-xs font-semibold uppercase tracking-wide text-slate-500 dark:text-slate-400";
@@ -125,6 +127,7 @@ export function AdminAssociatesWorkspace({
   return (
     <>
       <form
+        id="novo-associado"
         action={createUser}
         className="rounded-2xl border border-slate-200/80 bg-slate-50/50 p-4 dark:border-slate-700/80 dark:bg-slate-800/30"
       >
@@ -188,7 +191,7 @@ export function AdminAssociatesWorkspace({
         </div>
       </form>
 
-      <div className="mt-4 grid gap-3 sm:grid-cols-3">
+      <div className="mt-4 grid gap-3">
         <input
           type="text"
           value={query}
@@ -196,18 +199,54 @@ export function AdminAssociatesWorkspace({
           className={inpt}
           placeholder="Pesquisar associado..."
         />
-        <select
-          value={balanceFilter}
-          onChange={(e) => setBalanceFilter(e.target.value as typeof balanceFilter)}
-          className={inpt}
-        >
-          <option value="all">Todos os saldos</option>
-          <option value="debt">Só em dívida</option>
-          <option value="credit">Só com crédito</option>
-          <option value="zero">Saldo zero</option>
-        </select>
-        <div className="rounded-xl border border-slate-200 bg-slate-50 px-3.5 py-2.5 text-sm text-slate-600 dark:border-slate-700 dark:bg-slate-800/40 dark:text-slate-300">
-          {filteredMembers.length} resultado(s)
+        <div className="flex flex-wrap items-center gap-2">
+          <button
+            type="button"
+            onClick={() => setBalanceFilter("all")}
+            className={`${chipBtn} ${
+              balanceFilter === "all"
+                ? "border-emerald-300 bg-emerald-50 text-emerald-800 dark:border-emerald-900/40 dark:bg-emerald-950/40 dark:text-emerald-200"
+                : "border-slate-200 bg-white text-slate-700 dark:border-slate-700 dark:bg-slate-900/40 dark:text-slate-300"
+            }`}
+          >
+            Todos
+          </button>
+          <button
+            type="button"
+            onClick={() => setBalanceFilter("debt")}
+            className={`${chipBtn} ${
+              balanceFilter === "debt"
+                ? "border-red-300 bg-red-50 text-red-800 dark:border-red-900/40 dark:bg-red-950/40 dark:text-red-200"
+                : "border-slate-200 bg-white text-slate-700 dark:border-slate-700 dark:bg-slate-900/40 dark:text-slate-300"
+            }`}
+          >
+            Em dívida
+          </button>
+          <button
+            type="button"
+            onClick={() => setBalanceFilter("credit")}
+            className={`${chipBtn} ${
+              balanceFilter === "credit"
+                ? "border-emerald-300 bg-emerald-50 text-emerald-800 dark:border-emerald-900/40 dark:bg-emerald-950/40 dark:text-emerald-200"
+                : "border-slate-200 bg-white text-slate-700 dark:border-slate-700 dark:bg-slate-900/40 dark:text-slate-300"
+            }`}
+          >
+            Com crédito
+          </button>
+          <button
+            type="button"
+            onClick={() => setBalanceFilter("zero")}
+            className={`${chipBtn} ${
+              balanceFilter === "zero"
+                ? "border-slate-400 bg-slate-100 text-slate-800 dark:border-slate-500 dark:bg-slate-800 dark:text-slate-100"
+                : "border-slate-200 bg-white text-slate-700 dark:border-slate-700 dark:bg-slate-900/40 dark:text-slate-300"
+            }`}
+          >
+            Saldo zero
+          </button>
+          <span className="ml-auto rounded-full border border-slate-200 bg-slate-50 px-3 py-1.5 text-xs text-slate-600 dark:border-slate-700 dark:bg-slate-800/40 dark:text-slate-300">
+            {filteredMembers.length} resultado(s)
+          </span>
         </div>
       </div>
 

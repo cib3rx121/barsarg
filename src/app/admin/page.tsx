@@ -113,6 +113,9 @@ export default async function AdminPage({ searchParams }: AdminPageProps) {
     orderBy: { closedAt: "desc" },
     take: 12,
   });
+  const openEventsCount = await prisma.event.count({
+    where: { status: "OPEN" },
+  });
 
   const publicOrigin = await getPublicOrigin();
   const consultaUrl = `${publicOrigin}/consulta`;
@@ -267,19 +270,12 @@ export default async function AdminPage({ searchParams }: AdminPageProps) {
         <section className="admin-panel-section mt-6 grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
           <div className={`${card} p-4`}>
             <p className="text-xs uppercase tracking-wide text-slate-500 dark:text-slate-400">
-              Associados
-            </p>
-            <p className="mt-1 text-2xl font-semibold text-slate-900 dark:text-white">
-              {totalMembers}
-            </p>
-          </div>
-          <div className={`${card} p-4`}>
-            <p className="text-xs uppercase tracking-wide text-slate-500 dark:text-slate-400">
-              Com dívida
+              Em dívida
             </p>
             <p className="mt-1 text-2xl font-semibold text-red-600 dark:text-red-400">
               {debtMembers}
             </p>
+            <p className="mt-1 text-xs text-slate-500 dark:text-slate-400">Associados com valor em falta</p>
           </div>
           <div className={`${card} p-4`}>
             <p className="text-xs uppercase tracking-wide text-slate-500 dark:text-slate-400">
@@ -288,6 +284,16 @@ export default async function AdminPage({ searchParams }: AdminPageProps) {
             <p className="mt-1 text-2xl font-semibold text-emerald-600 dark:text-emerald-400">
               {creditMembers}
             </p>
+            <p className="mt-1 text-xs text-slate-500 dark:text-slate-400">Associados com saldo a favor</p>
+          </div>
+          <div className={`${card} p-4`}>
+            <p className="text-xs uppercase tracking-wide text-slate-500 dark:text-slate-400">
+              Convívios abertos
+            </p>
+            <p className="mt-1 text-2xl font-semibold text-amber-600 dark:text-amber-400">
+              {openEventsCount}
+            </p>
+            <p className="mt-1 text-xs text-slate-500 dark:text-slate-400">Eventos a aguardar gestão</p>
           </div>
           <div className={`${card} p-4`}>
             <p className="text-xs uppercase tracking-wide text-slate-500 dark:text-slate-400">
@@ -296,6 +302,7 @@ export default async function AdminPage({ searchParams }: AdminPageProps) {
             <p className="mt-1 text-2xl font-semibold text-slate-900 dark:text-white">
               {eurFmt.format(totalDebtCents / 100)}
             </p>
+            <p className="mt-1 text-xs text-slate-500 dark:text-slate-400">Associados totais: {totalMembers}</p>
           </div>
         </section>
 
@@ -820,7 +827,18 @@ export default async function AdminPage({ searchParams }: AdminPageProps) {
       </div>
 
       <div className="fixed inset-x-0 bottom-0 z-40 border-t border-slate-200/80 bg-white/95 px-3 py-2 backdrop-blur md:hidden dark:border-slate-700/80 dark:bg-slate-900/95">
-        <div className="mx-auto grid max-w-5xl grid-cols-5 gap-2">
+        <div className="mx-auto grid max-w-5xl grid-cols-3 gap-2">
+          <Link href="/admin/convivios#novo-convivio" className={mobileNavBtn}>
+            + Convívio
+          </Link>
+          <a href="#associados" className={mobileNavBtn}>
+            + Pagamento
+          </a>
+          <a href="#associados" className={mobileNavBtn}>
+            Associados
+          </a>
+        </div>
+        <div className="mx-auto mt-2 grid max-w-5xl grid-cols-3 gap-2">
           <a href="#definicoes" className={mobileNavBtn}>
             QR/Cota
           </a>
@@ -833,9 +851,9 @@ export default async function AdminPage({ searchParams }: AdminPageProps) {
           <Link href="/admin/convivios" className={mobileNavBtn}>
             Convívios
           </Link>
-          <a href="#associados" className={mobileNavBtn}>
-            Associados
-          </a>
+          <span className="inline-flex min-h-11 items-center justify-center text-[11px] font-medium text-slate-500 dark:text-slate-400">
+            Ações rápidas
+          </span>
         </div>
       </div>
     </div>

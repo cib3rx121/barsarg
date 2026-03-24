@@ -662,23 +662,41 @@ export async function createEvent(formData: FormData) {
 export async function saveEventCosts(formData: FormData) {
   await assertAdmin();
   const eventId = String(formData.get("eventId") ?? "").trim();
+  const totalCents = parseAmountEurToCents(String(formData.get("totalEur") ?? "")) ?? 0;
   const foodCents = parseAmountEurToCents(String(formData.get("foodEur") ?? "")) ?? 0;
   const drinkCents = parseAmountEurToCents(String(formData.get("drinkEur") ?? "")) ?? 0;
   const otherCents = parseAmountEurToCents(String(formData.get("otherEur") ?? "")) ?? 0;
-  if (!eventId || foodCents < 0 || drinkCents < 0 || otherCents < 0) {
+  if (
+    !eventId ||
+    totalCents < 0 ||
+    foodCents < 0 ||
+    drinkCents < 0 ||
+    otherCents < 0
+  ) {
     redirect("/admin/convivios?error=2");
   }
 
+  // Fluxo intuitivo:
+  // - Se houver total único, esse valor prevalece e guarda-se como "comida"
+  //   para divisão simples por inscritos.
+  const finalFoodCents = totalCents > 0 ? totalCents : foodCents;
+  const finalDrinkCents = totalCents > 0 ? 0 : drinkCents;
+  const finalOtherCents = totalCents > 0 ? 0 : otherCents;
+
   await prisma.event.update({
     where: { id: eventId },
-    data: { foodCents, drinkCents, otherCents },
+    data: {
+      foodCents: finalFoodCents,
+      drinkCents: finalDrinkCents,
+      otherCents: finalOtherCents,
+    },
   });
 
   await logAdminEvent({
     action: "UPDATE",
     entity: "EVENT_COSTS",
     entityId: eventId,
-    note: `Custos atualizados (F:${foodCents} B:${drinkCents} O:${otherCents})`,
+    note: `Custos atualizados (F:${finalFoodCents} B:${finalDrinkCents} O:${finalOtherCents})`,
   });
 
   revalidatePath("/admin/convivios");

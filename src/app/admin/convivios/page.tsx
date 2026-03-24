@@ -11,6 +11,7 @@ import {
 import { requireAdminSession } from "@/lib/auth-admin";
 import { computeEventSplit, splitProfileLabel } from "@/lib/events";
 import { prisma } from "@/lib/prisma";
+import { DayMonthYearField } from "@/components/DayMonthYearField";
 
 const eurFmt = new Intl.NumberFormat("pt-PT", {
   style: "currency",
@@ -33,6 +34,7 @@ const btnSecondary =
 
 export default async function ConviviosAdminPage() {
   await requireAdminSession();
+  const currentYear = new Date().getUTCFullYear();
 
   const [usersCount, settledCount] = await Promise.all([
     prisma.user.count({ where: { active: true } }),
@@ -71,7 +73,7 @@ export default async function ConviviosAdminPage() {
           </div>
         </header>
 
-        <section className={`mt-6 ${card}`}>
+        <section id="novo-convivio" className={`mt-6 ${card}`}>
           <h2 className="text-lg font-semibold text-slate-900 dark:text-white">
             Novo convívio
           </h2>
@@ -81,7 +83,14 @@ export default async function ConviviosAdminPage() {
               <label className="mb-1 block text-sm font-medium text-slate-700 dark:text-slate-300">
                 Dia do convívio
               </label>
-              <input name="eventDate" type="date" required className={inpt} />
+              <DayMonthYearField
+                idPrefix="new-event-date"
+                name="eventDate"
+                required
+                className={inpt}
+                yearStart={currentYear - 3}
+                yearEnd={currentYear + 3}
+              />
             </div>
             <textarea
               name="eventDescription"
@@ -133,10 +142,40 @@ export default async function ConviviosAdminPage() {
                         <p className="mt-2 text-sm text-slate-600 dark:text-slate-400">{event.description}</p>
                       ) : null}
                     </div>
+                    <div className="rounded-xl border border-slate-200/80 bg-slate-50/80 px-3 py-2 text-xs text-slate-600 dark:border-slate-700/80 dark:bg-slate-800/40 dark:text-slate-300">
+                      <p>
+                        <span className="font-semibold">Inscritos:</span> {yesCount}
+                      </p>
+                      <p>
+                        <span className="font-semibold">Total:</span>{" "}
+                        {eurFmt.format((event.foodCents + event.drinkCents + event.otherCents) / 100)}
+                      </p>
+                      <p>
+                        <span className="font-semibold">Médio:</span>{" "}
+                        {yesCount > 0
+                          ? eurFmt.format((event.foodCents + event.drinkCents + event.otherCents) / yesCount / 100)
+                          : "—"}
+                      </p>
+                    </div>
                   </div>
 
                   <form action={saveEventCosts} className="mt-4 grid gap-3 sm:grid-cols-4">
                     <input type="hidden" name="eventId" value={event.id} />
+                    <div className="sm:col-span-4 rounded-xl border border-emerald-200/80 bg-emerald-50/70 p-3 text-xs text-emerald-900 dark:border-emerald-900/40 dark:bg-emerald-950/30 dark:text-emerald-100">
+                      <p className="font-semibold">Modo rápido (recomendado): Total único</p>
+                      <p className="mt-1">
+                        Preencha apenas o total para dividir de forma simples pelos inscritos.
+                        Se preencher o total, os campos detalhados abaixo são ignorados.
+                      </p>
+                    </div>
+                    <input
+                      name="totalEur"
+                      className={`${inpt} sm:col-span-2`}
+                      placeholder="Total único € (ex.: 85,00)"
+                    />
+                    <div className="sm:col-span-2 flex items-center text-xs text-slate-500 dark:text-slate-400">
+                      Use os campos abaixo só quando quiser separar por categoria.
+                    </div>
                     <input
                       name="foodEur"
                       defaultValue={(event.foodCents / 100).toFixed(2).replace(".", ",")}
