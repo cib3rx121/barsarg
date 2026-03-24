@@ -30,6 +30,7 @@ import { getConsultaQrDataUrl } from "@/lib/consulta-qr";
 import { getPublicOrigin } from "@/lib/public-url";
 import { prisma } from "@/lib/prisma";
 import { QUOTA_SETTINGS_ID } from "@/lib/quota";
+import { ledgerKindLabel } from "@/lib/balance";
 
 type AdminPageProps = {
   searchParams: Promise<{
@@ -113,6 +114,13 @@ export default async function AdminPage({ searchParams }: AdminPageProps) {
   ]);
 
   const balanceByUser = await computeBalancesForUsers(users);
+  const recentLedgerRows = await prisma.ledgerEntry.findMany({
+    where: {
+      userId: { in: users.map((u) => u.id) },
+    },
+    orderBy: { createdAt: "desc" },
+    take: 400,
+  });
   const auditRows = await prisma.auditLog.findMany({
     orderBy: { createdAt: "desc" },
     take: 12,
@@ -138,6 +146,19 @@ export default async function AdminPage({ searchParams }: AdminPageProps) {
     const d = balanceByUser.get(u.id);
     const entryMk = monthKeyFromUtcDate(u.entryDate);
     const createdMk = monthKeyFromUtcDate(u.createdAt);
+    const recentEntries = recentLedgerRows
+      .filter((row) => row.userId === u.id)
+      .slice(0, 5)
+      .map((row) => ({
+        id: row.id,
+        createdAtIso: row.createdAt.toISOString(),
+        kind: row.kind,
+        kindLabel: ledgerKindLabel(row.kind),
+        monthKey: row.monthKey,
+        deltaCents: row.deltaCents,
+        note: row.note,
+      }));
+
     return {
       id: u.id,
       name: u.name,
@@ -157,6 +178,7 @@ export default async function AdminPage({ searchParams }: AdminPageProps) {
       ),
       entryLabel: formatMonthKeyLongPt(entryMk),
       createdMonthLabel: formatMonthKeyLongPt(createdMk),
+      recentEntries,
     };
   });
   const totalMembers = users.length;
@@ -852,6 +874,7 @@ export default async function AdminPage({ searchParams }: AdminPageProps) {
             <AdminAssociatesWorkspace
               members={serializedMembers}
               initialBalanceFilter={initialMemberFilter}
+              currentQuotaCents={quotaRow?.amountCents ?? null}
             />
           </div>
         </section>

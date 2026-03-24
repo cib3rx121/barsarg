@@ -1,6 +1,7 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { type ReactNode, useEffect, useMemo, useState } from "react";
+import { useFormStatus } from "react-dom";
 import { balanceToneClass } from "@/lib/balance-display";
 import { MonthYearField } from "@/components/MonthYearField";
 import {
@@ -27,6 +28,15 @@ export type SerializedMember = {
   entryLabel: string;
   /** Mês de registo no sistema */
   createdMonthLabel: string;
+  recentEntries: Array<{
+    id: string;
+    createdAtIso: string;
+    kind: string;
+    kindLabel: string;
+    monthKey: string | null;
+    deltaCents: number;
+    note: string | null;
+  }>;
 };
 
 const inpt =
@@ -55,9 +65,11 @@ const sectionCard =
 export function AdminAssociatesWorkspace({
   members,
   initialBalanceFilter = "all",
+  currentQuotaCents = null,
 }: {
   members: SerializedMember[];
   initialBalanceFilter?: "all" | "debt" | "credit" | "zero";
+  currentQuotaCents?: number | null;
 }) {
   const [openId, setOpenId] = useState<string | null>(null);
   const [query, setQuery] = useState("");
@@ -76,6 +88,16 @@ export function AdminAssociatesWorkspace({
   const currentMonthKey = `${currentMonth.getUTCFullYear()}-${String(
     currentMonth.getUTCMonth() + 1,
   ).padStart(2, "0")}`;
+  const quotaEur = currentQuotaCents && currentQuotaCents > 0
+    ? (currentQuotaCents / 100).toFixed(2).replace(".", ",")
+    : null;
+  const dateTimeFmt = new Intl.DateTimeFormat("pt-PT", {
+    day: "2-digit",
+    month: "2-digit",
+    year: "numeric",
+    hour: "2-digit",
+    minute: "2-digit",
+  });
 
   function openMember(id: string) {
     setQuickPayMonth("");
@@ -332,6 +354,29 @@ export function AdminAssociatesWorkspace({
                         <span className="mt-0.5 block text-xs text-slate-500 dark:text-slate-400">
                           Clique para gerir
                         </span>
+                        <form
+                          action={recordPayment}
+                          className="mt-2"
+                          onClick={(e) => e.stopPropagation()}
+                          onSubmit={(e) => {
+                            if (!quotaEur) return;
+                            if (!window.confirm("Registar pagamento da cota do mês atual?")) {
+                              e.preventDefault();
+                            }
+                          }}
+                        >
+                          <input type="hidden" name="payUserId" value={m.id} />
+                          <input type="hidden" name="payAmountEur" value={quotaEur ?? ""} />
+                          <input type="hidden" name="payMonthKey" value={currentMonthKey} />
+                          <input type="hidden" name="payNote" value="Pagamento rápido (mês atual)" />
+                          <SubmitButton
+                            className="rounded-lg border border-emerald-300 bg-emerald-50 px-2 py-1 text-xs font-semibold text-emerald-800 disabled:cursor-not-allowed disabled:opacity-60 dark:border-emerald-900/50 dark:bg-emerald-950/30 dark:text-emerald-200"
+                            pendingLabel="A guardar..."
+                            disabled={!quotaEur}
+                          >
+                            + Cota mês
+                          </SubmitButton>
+                        </form>
                       </td>
                       <td className="px-4 py-3.5 tabular-nums text-slate-600 dark:text-slate-400">
                         {m.entryLabel}
@@ -503,6 +548,25 @@ export function AdminAssociatesWorkspace({
                 <summary className="cursor-pointer text-sm font-semibold text-slate-800 dark:text-slate-100">
                   Registar pagamento
                 </summary>
+                <div className="mt-2 flex flex-wrap gap-2">
+                  {["10,00", "15,00", "20,00", "25,00"].map((v) => (
+                    <button
+                      key={v}
+                      type="button"
+                      className="rounded-lg border border-slate-200 px-2.5 py-1 text-xs font-medium text-slate-600 hover:bg-slate-50 dark:border-slate-600 dark:text-slate-300 dark:hover:bg-slate-800"
+                      onClick={(e) => {
+                        const input = e.currentTarget
+                          .closest("details")
+                          ?.querySelector<HTMLInputElement>(
+                          `input[name="payAmountEur"]`,
+                        );
+                        if (input) input.value = v;
+                      }}
+                    >
+                      {v} €
+                    </button>
+                  ))}
+                </div>
                 <form
                   key={`pay-${selected.id}`}
                   action={recordPayment}
@@ -585,9 +649,9 @@ export function AdminAssociatesWorkspace({
                       className={inpt}
                     />
                   </div>
-                  <button type="submit" className={`${btnSecondary} w-full`}>
+                  <SubmitButton className={`${btnSecondary} w-full`} pendingLabel="A guardar...">
                     Registar pagamento
-                  </button>
+                  </SubmitButton>
                 </form>
               </details>
 
@@ -600,6 +664,25 @@ export function AdminAssociatesWorkspace({
                 <p className="mt-1 text-xs text-slate-500 dark:text-slate-500">
                   Adiciona dívida extra no saldo (ex.: 20 €).
                 </p>
+                <div className="mt-2 flex flex-wrap gap-2">
+                  {["10,00", "20,00", "30,00", "50,00"].map((v) => (
+                    <button
+                      key={v}
+                      type="button"
+                      className="rounded-lg border border-slate-200 px-2.5 py-1 text-xs font-medium text-slate-600 hover:bg-slate-50 dark:border-slate-600 dark:text-slate-300 dark:hover:bg-slate-800"
+                      onClick={(e) => {
+                        const input = e.currentTarget
+                          .closest("details")
+                          ?.querySelector<HTMLInputElement>(
+                          `input[name="debtAmountEur"]`,
+                        );
+                        if (input) input.value = v;
+                      }}
+                    >
+                      {v} €
+                    </button>
+                  ))}
+                </div>
                 <form
                   key={`debt-${selected.id}`}
                   action={recordDebtAdjustment}
@@ -631,9 +714,9 @@ export function AdminAssociatesWorkspace({
                       className={inpt}
                     />
                   </div>
-                  <button type="submit" className={`${btnSecondary} w-full`}>
+                  <SubmitButton className={`${btnSecondary} w-full`} pendingLabel="A guardar...">
                     Adicionar à dívida
-                  </button>
+                  </SubmitButton>
                 </form>
               </details>
 
@@ -684,9 +767,9 @@ export function AdminAssociatesWorkspace({
                   placeholder="Nota (opcional)"
                   className={inpt}
                 />
-                <button type="submit" className={btnMuted}>
+                <SubmitButton className={btnMuted} pendingLabel="A guardar...">
                   Aplicar isenção
-                </button>
+                </SubmitButton>
               </form>
 
               <section
@@ -712,15 +795,57 @@ export function AdminAssociatesWorkspace({
                     placeholder="APAGAR"
                     className={inpt}
                   />
-                  <button type="submit" className={btnDanger}>
+                  <SubmitButton className={btnDanger} pendingLabel="A eliminar...">
                     Eliminar definitivamente
-                  </button>
+                  </SubmitButton>
                 </form>
               </section>
+
+              <div className="my-6 border-t border-slate-200 dark:border-slate-700" />
+              <p className={sectionTitle}>Últimos lançamentos</p>
+              {selected.recentEntries.length === 0 ? (
+                <p className="mt-2 text-xs text-slate-500 dark:text-slate-400">
+                  Sem lançamentos recentes.
+                </p>
+              ) : (
+                <ul className="mt-2 space-y-2">
+                  {selected.recentEntries.map((entry) => (
+                    <li key={entry.id} className="rounded-lg border border-slate-200/80 p-2 text-xs dark:border-slate-700/80">
+                      <p className="font-semibold text-slate-800 dark:text-slate-100">
+                        {entry.kindLabel} · {entry.deltaCents >= 0 ? "+" : "-"}
+                        {eurFmt.format(Math.abs(entry.deltaCents) / 100)}
+                      </p>
+                      <p className="text-slate-500 dark:text-slate-400">
+                        {dateTimeFmt.format(new Date(entry.createdAtIso))} · Mês: {entry.monthKey ?? "—"}
+                      </p>
+                      <p className="text-slate-500 dark:text-slate-400">{entry.note ?? "—"}</p>
+                    </li>
+                  ))}
+                </ul>
+              )}
             </div>
           </aside>
         </div>
       ) : null}
     </>
+  );
+}
+
+function SubmitButton({
+  children,
+  className,
+  pendingLabel,
+  disabled,
+}: {
+  children: ReactNode;
+  className: string;
+  pendingLabel: string;
+  disabled?: boolean;
+}) {
+  const { pending } = useFormStatus();
+  return (
+    <button type="submit" className={className} disabled={disabled || pending}>
+      {pending ? pendingLabel : children}
+    </button>
   );
 }
