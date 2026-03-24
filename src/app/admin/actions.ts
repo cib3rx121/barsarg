@@ -4,7 +4,7 @@ import { createHash, randomBytes } from "node:crypto";
 import { revalidatePath } from "next/cache";
 import { cookies } from "next/headers";
 import { redirect } from "next/navigation";
-import { put } from "@vercel/blob";
+import { del, put } from "@vercel/blob";
 import {
   currentMonthKeyUtc,
   monthKeyFromUtcDate,
@@ -241,6 +241,15 @@ function parseAmountEurToCents(raw: string): number | null {
   const n = Number.parseFloat(normalized);
   if (Number.isNaN(n) || n < 0) return null;
   return Math.round(n * 100);
+}
+
+function isManagedBlobUrl(url: string): boolean {
+  try {
+    const parsed = new URL(url);
+    return parsed.hostname.endsWith(".public.blob.vercel-storage.com");
+  } catch {
+    return false;
+  }
 }
 
 /** Valor único da cota mensal (igual para todos os meses). */
@@ -748,6 +757,7 @@ export async function saveEventCosts(formData: FormData) {
   const invoiceUrl = clearInvoice
     ? null
     : uploadedInvoiceUrl ?? invoiceUrlFromText ?? event.invoiceUrl ?? null;
+  const previousInvoiceUrl = event.invoiceUrl;
 
   await prisma.event.update({
     where: { id: eventId },
@@ -765,6 +775,18 @@ export async function saveEventCosts(formData: FormData) {
     entityId: eventId,
     note: `Custos atualizados (F:${finalFoodCents} B:${finalDrinkCents} O:${finalOtherCents})${invoiceUrl ? " + comprovativo" : clearInvoice ? " (comprovativo removido)" : ""}`,
   });
+
+  if (
+    previousInvoiceUrl &&
+    isManagedBlobUrl(previousInvoiceUrl) &&
+    invoiceUrl !== previousInvoiceUrl
+  ) {
+    try {
+      await del(previousInvoiceUrl);
+    } catch {
+      // Não bloquear o fluxo do admin se a limpeza do storage falhar.
+    }
+  }
 
   revalidatePath("/admin/convivios");
   redirect("/admin/convivios");
@@ -822,9 +844,17 @@ export async function deleteEvent(formData: FormData) {
 
   const event = await prisma.event.findUnique({
     where: { id: eventId },
-    select: { title: true },
+    select: { title: true, invoiceUrl: true },
   });
   await prisma.event.delete({ where: { id: eventId } });
+
+  if (event?.invoiceUrl && isManagedBlobUrl(event.invoiceUrl)) {
+    try {
+      await del(event.invoiceUrl);
+    } catch {
+      // Não impedir eliminação do convívio se o delete no Blob falhar.
+    }
+  }
 
   await logAdminEvent({
     action: "DELETE",
