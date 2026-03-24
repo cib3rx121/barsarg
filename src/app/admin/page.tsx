@@ -4,9 +4,9 @@ import { cookies } from "next/headers";
 import { redirect } from "next/navigation";
 import {
   clearPublicNotice,
+  createAdminAccessUser,
   saveGlobalQuota,
   updateAdminPassword,
-  updateAdminUsername,
   updateConsultaPin,
   updatePublicNotice,
 } from "./actions";
@@ -87,7 +87,7 @@ export default async function AdminPage({ searchParams }: AdminPageProps) {
   const hasDebtFormError = billingErr === "10";
   const hasConsultaPinError = billingErr === "12";
   const hasPublicNoticeError = billingErr === "13";
-  const hasAdminUsernameError = billingErr === "14";
+  const hasAdminCreateUserError = billingErr === "14";
   const hasAdminPasswordError = billingErr === "15";
 
   const [users, quotaRow] = await Promise.all([
@@ -429,20 +429,21 @@ export default async function AdminPage({ searchParams }: AdminPageProps) {
 
               <section className="mt-4 rounded-2xl border border-slate-200/80 bg-slate-50/70 p-4 dark:border-slate-700/80 dark:bg-slate-800/35">
                 <h3 className="text-sm font-semibold text-slate-900 dark:text-slate-100">
-                  Alterar login do admin
+                  Criar novo user de acesso
                 </h3>
                 <p className="mt-1 text-xs text-slate-500 dark:text-slate-400">
-                  Use este bloco apenas para mudar o nome de utilizador.
+                  Cria um novo acesso administrativo (substitui o atual).
                 </p>
-                {hasAdminUsernameError ? (
+                {hasAdminCreateUserError ? (
                   <p className="mt-3 rounded-lg border border-red-200 bg-red-50 px-3 py-2 text-sm text-red-800 dark:border-red-900/50 dark:bg-red-950/35 dark:text-red-200">
-                    Não foi possível alterar o login. Confirme a palavra-passe atual.
+                    Não foi possível criar o novo acesso. Confirme a palavra-passe atual e
+                    os novos dados.
                   </p>
                 ) : null}
-                <form action={updateAdminUsername} className="mt-3 space-y-3">
+                <form action={createAdminAccessUser} className="mt-3 space-y-3">
                   <div>
                     <label className="mb-1 block text-sm font-medium text-slate-700 dark:text-slate-300">
-                      Login atual
+                      User atual
                     </label>
                     <input
                       type="text"
@@ -456,7 +457,7 @@ export default async function AdminPage({ searchParams }: AdminPageProps) {
                       Palavra-passe atual (confirmação)
                     </label>
                     <input
-                      name="currentPasswordForUsername"
+                      name="currentPasswordForCreateUser"
                       type="password"
                       required
                       className={inpt}
@@ -464,29 +465,55 @@ export default async function AdminPage({ searchParams }: AdminPageProps) {
                   </div>
                   <div>
                     <label className="mb-1 block text-sm font-medium text-slate-700 dark:text-slate-300">
-                      Novo login
+                      Novo user de acesso
                     </label>
                     <input
-                      name="newUsernameOnly"
+                      name="newAccessUsername"
                       type="text"
                       required
-                      defaultValue={quotaRow?.adminUsername ?? process.env.ADMIN_USERNAME ?? ""}
+                      defaultValue=""
                       className={inpt}
-                      placeholder="ex.: admin.bar"
+                      placeholder="ex.: admin.bar.novo"
                     />
                   </div>
+                  <div className="grid gap-3">
+                    <div>
+                      <label className="mb-1 block text-sm font-medium text-slate-700 dark:text-slate-300">
+                        Password do novo user
+                      </label>
+                      <input
+                        name="newAccessPassword"
+                        type="password"
+                        minLength={6}
+                        required
+                        className={inpt}
+                      />
+                    </div>
+                    <div>
+                      <label className="mb-1 block text-sm font-medium text-slate-700 dark:text-slate-300">
+                        Confirmar password do novo user
+                      </label>
+                      <input
+                        name="confirmAccessPassword"
+                        type="password"
+                        minLength={6}
+                        required
+                        className={inpt}
+                      />
+                    </div>
+                  </div>
                   <button type="submit" className={btnPrimary}>
-                    Guardar login
+                    Criar novo acesso
                   </button>
                 </form>
               </section>
 
               <section className="mt-4 rounded-2xl border border-slate-200/80 bg-slate-50/70 p-4 dark:border-slate-700/80 dark:bg-slate-800/35">
                 <h3 className="text-sm font-semibold text-slate-900 dark:text-slate-100">
-                  Alterar palavra-passe do admin
+                  Alterar password do user logado
                 </h3>
                 <p className="mt-1 text-xs text-slate-500 dark:text-slate-400">
-                  Use este bloco apenas para mudar a palavra-passe.
+                  Muda apenas a password do acesso atual.
                 </p>
                 {hasAdminPasswordError ? (
                   <p className="mt-3 rounded-lg border border-red-200 bg-red-50 px-3 py-2 text-sm text-red-800 dark:border-red-900/50 dark:bg-red-950/35 dark:text-red-200">
@@ -495,6 +522,17 @@ export default async function AdminPage({ searchParams }: AdminPageProps) {
                   </p>
                 ) : null}
                 <form action={updateAdminPassword} className="mt-3 space-y-3">
+                  <div>
+                    <label className="mb-1 block text-sm font-medium text-slate-700 dark:text-slate-300">
+                      User logado
+                    </label>
+                    <input
+                      type="text"
+                      value={quotaRow?.adminUsername ?? process.env.ADMIN_USERNAME ?? ""}
+                      readOnly
+                      className={`${inpt} cursor-not-allowed bg-slate-100/90 dark:bg-slate-800/80`}
+                    />
+                  </div>
                   <div>
                     <label className="mb-1 block text-sm font-medium text-slate-700 dark:text-slate-300">
                       Palavra-passe atual

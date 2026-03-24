@@ -342,24 +342,23 @@ export async function recordPayment(formData: FormData) {
   redirect("/admin");
 }
 
-export async function updateAdminCredentials(formData: FormData) {
+export async function createAdminAccessUser(formData: FormData) {
   await assertAdmin();
 
-  const currentPassword = String(formData.get("currentPassword") ?? "").trim();
-  const newUsername = String(formData.get("newUsername") ?? "").trim();
-  const newPassword = String(formData.get("newPassword") ?? "").trim();
-  const confirmPassword = String(formData.get("confirmPassword") ?? "").trim();
-
+  const currentPassword = String(formData.get("currentPasswordForCreateUser") ?? "").trim();
+  const newUsername = String(formData.get("newAccessUsername") ?? "").trim();
+  const newPassword = String(formData.get("newAccessPassword") ?? "").trim();
+  const confirmPassword = String(formData.get("confirmAccessPassword") ?? "").trim();
   if (!currentPassword || !newUsername || !newPassword || !confirmPassword) {
-    redirect("/admin?error=11");
+    redirect("/admin?error=14");
   }
   if (newPassword.length < 6 || newPassword !== confirmPassword) {
-    redirect("/admin?error=11");
+    redirect("/admin?error=14");
   }
 
   const currentOk = await verifyAdminPassword(currentPassword);
   if (!currentOk) {
-    redirect("/admin?error=11");
+    redirect("/admin?error=14");
   }
 
   await ensureQuotaSettingsExists();
@@ -371,40 +370,10 @@ export async function updateAdminCredentials(formData: FormData) {
     },
   });
   await logAdminEvent({
-    action: "UPDATE",
-    entity: "ADMIN_CREDENTIALS",
+    action: "CREATE",
+    entity: "ADMIN_ACCESS_USER",
     entityId: QUOTA_SETTINGS_ID,
-    note: `Credenciais admin atualizadas para utilizador ${newUsername}`,
-  });
-
-  revalidatePath("/admin");
-  redirect("/admin");
-}
-
-export async function updateAdminUsername(formData: FormData) {
-  await assertAdmin();
-
-  const currentPassword = String(formData.get("currentPasswordForUsername") ?? "").trim();
-  const newUsername = String(formData.get("newUsernameOnly") ?? "").trim();
-  if (!currentPassword || !newUsername) {
-    redirect("/admin?error=14");
-  }
-
-  const currentOk = await verifyAdminPassword(currentPassword);
-  if (!currentOk) {
-    redirect("/admin?error=14");
-  }
-
-  await ensureQuotaSettingsExists();
-  await prisma.quotaSettings.update({
-    where: { id: QUOTA_SETTINGS_ID },
-    data: { adminUsername: newUsername },
-  });
-  await logAdminEvent({
-    action: "UPDATE",
-    entity: "ADMIN_USERNAME",
-    entityId: QUOTA_SETTINGS_ID,
-    note: `Login admin alterado para ${newUsername}`,
+    note: `Novo user de acesso criado: ${newUsername}`,
   });
 
   revalidatePath("/admin");
