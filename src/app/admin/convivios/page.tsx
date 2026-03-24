@@ -226,7 +226,7 @@ export default async function ConviviosAdminPage({ searchParams }: ConviviosPage
                       />
                       <div>
                         <label className="mb-1 block text-xs font-semibold uppercase tracking-wide text-slate-500 dark:text-slate-400">
-                          Upload comprovativo (imagem/PDF)
+                          Comprovativo (imagem/PDF)
                         </label>
                         <input
                           name="invoiceFile"
@@ -234,19 +234,17 @@ export default async function ConviviosAdminPage({ searchParams }: ConviviosPage
                           accept="image/*,application/pdf"
                           className={inpt}
                         />
-                      </div>
-                      <div>
-                        <label className="mb-1 block text-xs font-semibold uppercase tracking-wide text-slate-500 dark:text-slate-400">
-                          URL comprovativo (opcional)
-                        </label>
-                        <input
-                          name="invoiceUrl"
-                          type="url"
-                          defaultValue={event.invoiceUrl ?? ""}
-                          className={inpt}
-                          placeholder="https://... (fatura)"
-                        />
-                        <label className="mt-2 inline-flex items-center gap-2 text-xs text-slate-600 dark:text-slate-300">
+                        {event.invoiceUrl ? (
+                          <a
+                            href={event.invoiceUrl}
+                            target="_blank"
+                            rel="noreferrer"
+                            className="mt-2 inline-block text-xs font-semibold text-emerald-700 underline underline-offset-2 hover:text-emerald-600 dark:text-emerald-300 dark:hover:text-emerald-200"
+                          >
+                            Ver comprovativo atual
+                          </a>
+                        ) : null}
+                        <label className="mt-2 flex items-center gap-2 text-xs text-slate-600 dark:text-slate-300">
                           <input type="checkbox" name="clearInvoice" className="h-4 w-4" />
                           Remover comprovativo atual
                         </label>
@@ -328,9 +326,9 @@ export default async function ConviviosAdminPage({ searchParams }: ConviviosPage
                     <div className="sm:col-span-2 flex items-center text-xs text-slate-500 dark:text-slate-400">
                       Use os campos abaixo só quando quiser separar por categoria.
                     </div>
-                    <div>
+                    <div className="sm:col-span-2">
                       <label className="mb-1 block text-xs font-semibold uppercase tracking-wide text-slate-500 dark:text-slate-400">
-                        Upload comprovativo (imagem/PDF)
+                        Comprovativo (imagem/PDF)
                       </label>
                       <input
                         name="invoiceFile"
@@ -339,20 +337,17 @@ export default async function ConviviosAdminPage({ searchParams }: ConviviosPage
                         className={inpt}
                         aria-label="Ficheiro de comprovativo"
                       />
-                    </div>
-                    <div>
-                      <label className="mb-1 block text-xs font-semibold uppercase tracking-wide text-slate-500 dark:text-slate-400">
-                        URL comprovativo (opcional)
-                      </label>
-                      <input
-                        name="invoiceUrl"
-                        type="url"
-                        defaultValue={event.invoiceUrl ?? ""}
-                        className={inpt}
-                        placeholder="https://... (fatura)"
-                        aria-label="URL do comprovativo"
-                      />
-                      <label className="mt-2 inline-flex items-center gap-2 text-xs text-slate-600 dark:text-slate-300">
+                      {event.invoiceUrl ? (
+                        <a
+                          href={event.invoiceUrl}
+                          target="_blank"
+                          rel="noreferrer"
+                          className="mt-2 inline-block text-xs font-semibold text-emerald-700 underline underline-offset-2 hover:text-emerald-600 dark:text-emerald-300 dark:hover:text-emerald-200"
+                        >
+                          Ver comprovativo atual
+                        </a>
+                      ) : null}
+                      <label className="mt-2 flex items-center gap-2 text-xs text-slate-600 dark:text-slate-300">
                         <input type="checkbox" name="clearInvoice" className="h-4 w-4" />
                         Remover comprovativo atual
                       </label>
@@ -401,16 +396,6 @@ export default async function ConviviosAdminPage({ searchParams }: ConviviosPage
                       Use <span className="font-semibold">Comida/Bebida/Outros</span> apenas quando quiser
                       separar custos.
                     </p>
-                    {event.invoiceUrl ? (
-                      <a
-                        href={event.invoiceUrl}
-                        target="_blank"
-                        rel="noreferrer"
-                        className="sm:col-span-4 text-xs font-semibold text-emerald-700 underline underline-offset-2 hover:text-emerald-600 dark:text-emerald-300 dark:hover:text-emerald-200"
-                      >
-                        Ver comprovativo atual
-                      </a>
-                    ) : null}
                   </form>
                   </div>
 

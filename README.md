@@ -27,7 +27,7 @@ Plataforma web para gerir cotas mensais de um bar, com foco em controlo de divid
   - perfis simplificados: `Tudo` ou `So comida`
   - liquidacao para saldo do associado
   - ordenacao por data do evento (mais proximo primeiro)
-  - comprovativo de custos por upload direto (imagem/PDF) ou URL opcional
+  - comprovativo de custos por upload direto (imagem/PDF)
 
 ## Regras de negocio
 - Divida e mensal desde o mes de entrada (inclui o mes de entrada, mesmo a meio do mes).

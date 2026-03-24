@@ -710,18 +710,6 @@ export async function saveEventCosts(formData: FormData) {
   const foodCents = parseAmountEurToCents(String(formData.get("foodEur") ?? "")) ?? 0;
   const drinkCents = parseAmountEurToCents(String(formData.get("drinkEur") ?? "")) ?? 0;
   const otherCents = parseAmountEurToCents(String(formData.get("otherEur") ?? "")) ?? 0;
-  const invoiceUrlRaw = String(formData.get("invoiceUrl") ?? "").trim();
-  const invoiceUrlFromText: string | null = invoiceUrlRaw ? invoiceUrlRaw : null;
-  if (invoiceUrlFromText) {
-    try {
-      const parsed = new URL(invoiceUrlFromText);
-      if (parsed.protocol !== "http:" && parsed.protocol !== "https:") {
-        redirect("/admin/convivios?error=2");
-      }
-    } catch {
-      redirect("/admin/convivios?error=2");
-    }
-  }
   if (
     !eventId ||
     totalCents < 0 ||
@@ -772,7 +760,7 @@ export async function saveEventCosts(formData: FormData) {
 
   const invoiceUrl = clearInvoice
     ? null
-    : uploadedInvoiceUrl ?? invoiceUrlFromText ?? event.invoiceUrl ?? null;
+    : uploadedInvoiceUrl ?? event.invoiceUrl ?? null;
   const previousInvoiceUrl = event.invoiceUrl;
 
   await prisma.event.update({
