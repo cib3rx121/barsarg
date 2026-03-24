@@ -8,6 +8,17 @@ function toCsvCell(value: string): string {
   return `"${escaped}"`;
 }
 
+const eurFmt = new Intl.NumberFormat("pt-PT", {
+  style: "currency",
+  currency: "EUR",
+});
+
+const dateFmt = new Intl.DateTimeFormat("pt-PT", {
+  day: "2-digit",
+  month: "2-digit",
+  year: "numeric",
+});
+
 export async function GET() {
   const session = (await cookies()).get("barsarg_admin_session")?.value;
   if (session !== "ok") {
@@ -21,20 +32,33 @@ export async function GET() {
   const balances = await computeBalancesForUsers(users);
 
   const lines = [
-    ["Nome", "Ativo", "Entrada", "SaldoCents", "MesesEstimados"].join(","),
+    [
+      "Nome",
+      "Ativo",
+      "Estado",
+      "Data de entrada",
+      "Saldo (€)",
+      "Saldo (cêntimos)",
+      "Meses estimados",
+    ].join(";"),
     ...users.map((u) => {
       const b = balances.get(u.id);
+      const cents = b?.balanceCents ?? 0;
+      const state = cents > 0 ? "Em dívida" : cents < 0 ? "Com crédito" : "Sem saldo";
       return [
         toCsvCell(u.name),
         u.active ? "sim" : "nao",
-        u.entryDate.toISOString().slice(0, 10),
-        String(b?.balanceCents ?? 0),
+        toCsvCell(state),
+        toCsvCell(dateFmt.format(u.entryDate)),
+        toCsvCell(eurFmt.format(Math.abs(cents) / 100)),
+        String(cents),
         String(b?.estimatedMonthsEquivalent ?? 0),
-      ].join(",");
+      ].join(";");
     }),
   ];
 
-  const csv = `${lines.join("\n")}\n`;
+  const bom = "\uFEFF";
+  const csv = `${bom}${lines.join("\n")}\n`;
   return new NextResponse(csv, {
     headers: {
       "content-type": "text/csv; charset=utf-8",
