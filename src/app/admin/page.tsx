@@ -144,8 +144,8 @@ export default async function AdminPage({ searchParams }: AdminPageProps) {
         >
           <div className="flex flex-col gap-6 sm:flex-row sm:items-start">
             {hasBrandLogo() ? (
-              <span className="flex h-16 w-16 shrink-0 items-center justify-center overflow-hidden rounded-2xl border border-slate-200/80 bg-white/90 shadow-sm dark:border-slate-600 dark:bg-slate-950/40">
-                <BrandLogo size={56} priority className="p-1" />
+              <span className="flex h-20 w-20 shrink-0 items-center justify-center overflow-hidden rounded-2xl border border-slate-200/80 bg-white/90 shadow-sm dark:border-slate-600 dark:bg-slate-950/40 sm:h-24 sm:w-24">
+                <BrandLogo size={80} priority className="p-1.5 sm:p-2" />
               </span>
             ) : null}
             <div className="min-w-0 flex-1">

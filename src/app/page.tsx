@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { BrandLogo, hasBrandLogo } from "@/components/BrandLogo";
 import { PublicShell } from "@/components/PublicShell";
 
 const card =
@@ -12,9 +13,16 @@ const btnOutline =
 
 export default function Home() {
   return (
-    <PublicShell>
-      <div className="flex min-h-[calc(100vh-8rem)] items-center justify-center py-8">
-        <main className={card}>
+    <PublicShell showBrandBar={false}>
+      <div className="flex min-h-[calc(100dvh-4rem)] items-center justify-center py-8">
+        <main className={`${card} text-center`}>
+          {hasBrandLogo() ? (
+            <div className="mb-6 flex justify-center">
+              <span className="flex h-28 w-28 items-center justify-center overflow-hidden rounded-2xl border border-slate-200/80 bg-white/90 shadow-md dark:border-slate-600 dark:bg-slate-950/40 sm:h-32 sm:w-32">
+                <BrandLogo size={112} priority className="p-2 sm:p-2.5" />
+              </span>
+            </div>
+          ) : null}
           <p className="text-[0.65rem] font-semibold uppercase tracking-[0.28em] text-emerald-700 dark:text-emerald-400">
             Academia Militar
           </p>
@@ -29,7 +37,7 @@ export default function Home() {
             Serviço operacional.
           </div>
 
-          <div className="mt-8 grid gap-3 sm:grid-cols-2">
+          <div className="mt-8 grid max-w-md gap-3 sm:mx-auto sm:grid-cols-2">
             <Link href="/admin/login" className={btnPrimary}>
               Área administrativa
             </Link>

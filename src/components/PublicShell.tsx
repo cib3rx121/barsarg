@@ -6,9 +6,12 @@ import { BrandLogo, hasBrandLogo } from "@/components/BrandLogo";
 export function PublicShell({
   children,
   className = "",
+  showBrandBar = true,
 }: {
   children: ReactNode;
   className?: string;
+  /** Se false, omite a barra no topo (ex.: landing com logótipo grande no cartão). */
+  showBrandBar?: boolean;
 }) {
   return (
     <div
@@ -23,21 +26,23 @@ export function PublicShell({
         }}
       />
       <div className="public-shell-content relative mx-auto w-full max-w-4xl px-3 py-6 sm:px-6 sm:py-10">
-        <div className="mb-5 flex flex-col gap-3 sm:mb-8 sm:flex-row sm:items-center sm:justify-between">
-          <Link
-            href="/"
-            className="touch-target -m-2 inline-flex max-w-full items-center gap-3 rounded-2xl p-2 outline-none ring-emerald-500/0 transition hover:opacity-90 focus-visible:ring-2 focus-visible:ring-emerald-500/40"
-          >
-            {hasBrandLogo() ? (
-              <span className="flex h-11 w-11 shrink-0 items-center justify-center overflow-hidden rounded-xl border border-slate-200/80 bg-white/80 shadow-sm sm:h-12 sm:w-12 dark:border-slate-600 dark:bg-slate-900/60">
-                <BrandLogo size={40} priority className="p-0.5" />
+        {showBrandBar ? (
+          <div className="mb-5 flex flex-col gap-3 sm:mb-8 sm:flex-row sm:items-center sm:justify-between">
+            <Link
+              href="/"
+              className="touch-target -m-2 inline-flex max-w-full items-center gap-3 rounded-2xl p-2 outline-none ring-emerald-500/0 transition hover:opacity-90 focus-visible:ring-2 focus-visible:ring-emerald-500/40"
+            >
+              {hasBrandLogo() ? (
+                <span className="flex h-16 w-16 shrink-0 items-center justify-center overflow-hidden rounded-2xl border border-slate-200/80 bg-white/80 shadow-sm dark:border-slate-600 dark:bg-slate-900/60">
+                  <BrandLogo size={56} priority className="p-1" />
+                </span>
+              ) : null}
+              <span className="min-w-0 text-[0.65rem] font-semibold uppercase leading-tight tracking-[0.2em] text-emerald-800 dark:text-emerald-400">
+                Bar de Sargentos
               </span>
-            ) : null}
-            <span className="min-w-0 text-[0.6rem] font-semibold uppercase leading-tight tracking-[0.18em] text-emerald-800 sm:text-[0.65rem] sm:tracking-[0.22em] dark:text-emerald-400">
-              Bar de Sargentos
-            </span>
-          </Link>
-        </div>
+            </Link>
+          </div>
+        ) : null}
         {children}
       </div>
     </div>

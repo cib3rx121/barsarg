@@ -262,8 +262,8 @@ export function AdminAssociatesWorkspace({
             className="drawer-backdrop-animate absolute inset-0 touch-manipulation bg-slate-900/45 backdrop-blur-[2px]"
             onClick={() => setOpenId(null)}
           />
-          <aside className="drawer-panel-animate absolute inset-y-0 right-0 flex h-[100dvh] max-h-[100dvh] w-full max-w-full flex-col border-l border-slate-200 bg-white shadow-2xl sm:max-w-md dark:border-slate-700 dark:bg-slate-900">
-            <div className="sticky top-0 z-10 flex items-start justify-between gap-3 border-b border-slate-200 bg-white/95 p-4 backdrop-blur-md dark:border-slate-700 dark:bg-slate-900/95">
+          <aside className="drawer-panel-animate absolute bottom-0 right-0 top-0 z-50 flex min-h-0 w-full max-w-full flex-col overflow-hidden border-l border-slate-200 bg-white shadow-2xl sm:max-w-md dark:border-slate-700 dark:bg-slate-900">
+            <div className="flex shrink-0 items-start justify-between gap-3 border-b border-slate-200 bg-white/95 p-4 backdrop-blur-md dark:border-slate-700 dark:bg-slate-900/95">
               <div className="min-w-0 pr-2">
                 <h2
                   id="drawer-member-title"
@@ -284,6 +284,17 @@ export function AdminAssociatesWorkspace({
                 <p className="text-xs text-slate-500 dark:text-slate-500">
                   Registo: {selected.createdAtLabel}
                 </p>
+                <button
+                  type="button"
+                  className="mt-3 text-left text-xs font-semibold text-red-700 underline decoration-red-300 underline-offset-2 dark:text-red-400 dark:decoration-red-800"
+                  onClick={() =>
+                    document
+                      .getElementById("associado-drawer-delete")
+                      ?.scrollIntoView({ behavior: "smooth", block: "start" })
+                  }
+                >
+                  Eliminar associado — toque para ir ao formulário ↓
+                </button>
               </div>
               <button
                 type="button"
@@ -294,7 +305,10 @@ export function AdminAssociatesWorkspace({
               </button>
             </div>
 
-            <div className="flex-1 overflow-y-auto overscroll-y-contain px-4 pb-[max(1.25rem,env(safe-area-inset-bottom))] pt-4 sm:px-5 sm:pb-6 sm:pt-5">
+            <div
+              className="min-h-0 flex-1 overflow-y-auto overflow-x-hidden overscroll-y-contain px-4 pb-[max(6rem,env(safe-area-inset-bottom,0px)+3rem)] pt-4 sm:px-5 sm:pb-8 sm:pt-5"
+              style={{ WebkitOverflowScrolling: "touch" }}
+            >
               <p className={sectionTitle}>Dados do associado</p>
               <form
                 key={`edit-${selected.id}`}
@@ -433,30 +447,33 @@ export function AdminAssociatesWorkspace({
                 </button>
               </form>
 
-              <div className="my-6 border-t border-red-200/80 dark:border-red-900/40" />
-
-              <p className={sectionTitle}>Remover associado</p>
-              <p className="mt-1 text-xs text-red-700/90 dark:text-red-300/90">
-                Apaga o registo e todo o histórico de lançamentos. Escreva APAGAR para
-                confirmar.
-              </p>
-              <form
-                key={`del-${selected.id}`}
-                action={deleteMember}
-                className="mt-3 space-y-3"
+              <section
+                id="associado-drawer-delete"
+                className="scroll-mt-6 border-t border-red-200/80 pt-6 dark:border-red-900/40"
               >
-                <input type="hidden" name="userId" value={selected.id} />
-                <input
-                  name="deleteConfirm"
-                  type="text"
-                  autoComplete="off"
-                  placeholder="APAGAR"
-                  className={inpt}
-                />
-                <button type="submit" className={btnDanger}>
-                  Eliminar definitivamente
-                </button>
-              </form>
+                <p className={sectionTitle}>Remover associado</p>
+                <p className="mt-1 text-xs text-red-700/90 dark:text-red-300/90">
+                  Apaga o registo e todo o histórico de lançamentos. Escreva APAGAR para
+                  confirmar.
+                </p>
+                <form
+                  key={`del-${selected.id}`}
+                  action={deleteMember}
+                  className="mt-3 space-y-3"
+                >
+                  <input type="hidden" name="userId" value={selected.id} />
+                  <input
+                    name="deleteConfirm"
+                    type="text"
+                    autoComplete="off"
+                    placeholder="APAGAR"
+                    className={inpt}
+                  />
+                  <button type="submit" className={btnDanger}>
+                    Eliminar definitivamente
+                  </button>
+                </form>
+              </section>
             </div>
           </aside>
         </div>
