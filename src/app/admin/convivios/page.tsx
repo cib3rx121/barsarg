@@ -34,7 +34,7 @@ const inpt =
 const btnPrimary =
   "touch-target inline-flex min-h-12 items-center justify-center rounded-xl bg-emerald-600 px-4 py-2.5 text-sm font-semibold text-white shadow-lg shadow-emerald-600/20 transition hover:bg-emerald-500";
 const btnSecondary =
-  "touch-target inline-flex min-h-12 items-center justify-center rounded-xl border border-slate-200 bg-white px-4 py-2.5 text-sm font-semibold text-slate-800 transition hover:bg-slate-50 dark:border-slate-600 dark:bg-slate-800 dark:text-slate-100";
+  "touch-target inline-flex min-h-12 items-center justify-center rounded-xl border border-slate-200 bg-white px-4 py-2.5 text-sm font-semibold text-slate-800 transition hover:bg-slate-50 dark:border-slate-600 dark:bg-slate-800 dark:text-slate-100 dark:hover:bg-slate-700";
 
 type ConviviosPageProps = {
   searchParams?: Promise<{ error?: string }>;
@@ -232,13 +232,21 @@ export default async function ConviviosAdminPage({ searchParams }: ConviviosPage
                   </div>
 
                   {event.status === "SETTLED" ? (
-                    <div className="mt-3">
+                    <div className="mt-3 flex flex-wrap items-center gap-2">
                       <Link
                         href={`/admin/convivios/${event.id}/resumo`}
                         className={`${btnSecondary} inline-flex`}
                       >
                         Ver resumo para partilhar
                       </Link>
+                      <span className="text-xs text-slate-500 dark:text-slate-400">
+                        Consulta pública:{" "}
+                        {event.publicConsultaSummary ? (
+                          <span className="font-medium text-emerald-700 dark:text-emerald-400">visível</span>
+                        ) : (
+                          <span className="font-medium text-slate-600 dark:text-slate-400">oculto</span>
+                        )}
+                      </span>
                     </div>
                   ) : null}
 

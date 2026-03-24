@@ -10,9 +10,11 @@ import {
   formatMonthKeyLongPt,
   monthKeyFromUtcDate,
 } from "@/lib/month-keys";
+import { ConsultaSettledEventsSection } from "@/components/ConsultaSettledEventsSection";
 import { PublicShell } from "@/components/PublicShell";
 import { getQuotaSettingsRow, verifyConsultaPin } from "@/lib/app-settings";
 import { prisma } from "@/lib/prisma";
+import { fetchSettledEventsForPublicConsulta } from "@/lib/settled-events-public";
 
 type ConsultaPageProps = {
   searchParams: Promise<{
@@ -44,7 +46,7 @@ const btnPrimary =
   "touch-target inline-flex min-h-12 w-full items-center justify-center rounded-xl bg-emerald-600 px-4 py-3 text-sm font-semibold text-white shadow-lg shadow-emerald-600/20 transition hover:bg-emerald-500";
 
 const btnOutline =
-  "touch-target inline-flex min-h-12 items-center justify-center rounded-xl border border-slate-200 bg-white px-4 py-2.5 text-sm font-semibold text-slate-800 transition hover:bg-slate-50 dark:border-slate-600 dark:bg-slate-800 dark:text-slate-100";
+  "touch-target inline-flex min-h-12 items-center justify-center rounded-xl border border-slate-200 bg-white px-4 py-2.5 text-sm font-semibold text-slate-800 transition hover:bg-slate-50 dark:border-slate-600 dark:bg-slate-800 dark:text-slate-100 dark:hover:bg-slate-700";
 
 const btnDark =
   "touch-target inline-flex min-h-12 items-center justify-center rounded-xl bg-slate-800 px-4 py-2.5 text-sm font-semibold text-white transition hover:bg-slate-700 dark:bg-emerald-600 dark:hover:bg-emerald-500";
@@ -134,6 +136,7 @@ export default async function ConsultaPage({ searchParams }: ConsultaPageProps) 
 
   await backfillMissingMonthlyCharges();
   const settingsRow = await getQuotaSettingsRow();
+  const settledPublicEvents = await fetchSettledEventsForPublicConsulta();
   const openEvents = await prisma.event.findMany({
     where: { status: "OPEN" },
     orderBy: [{ eventDate: "asc" }, { createdAt: "desc" }],
@@ -240,6 +243,8 @@ export default async function ConsultaPage({ searchParams }: ConsultaPageProps) 
             </ul>
           </div>
         ) : null}
+
+        <ConsultaSettledEventsSection events={settledPublicEvents} />
 
         <div className="mt-6 flex flex-col gap-2 sm:flex-row sm:flex-wrap sm:gap-3">
           <Link href="/" className={`${btnOutline} w-full sm:w-auto`}>

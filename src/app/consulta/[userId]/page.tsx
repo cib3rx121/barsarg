@@ -6,10 +6,12 @@ import {
   computeBalanceDetailForUser,
   ledgerKindLabel,
 } from "@/lib/balance";
+import { ConsultaSettledEventsSection } from "@/components/ConsultaSettledEventsSection";
 import { PublicShell } from "@/components/PublicShell";
 import { requireConsultaSession } from "@/lib/auth-consulta";
 import { computeEventSplit, splitProfileLabel } from "@/lib/events";
 import { prisma } from "@/lib/prisma";
+import { fetchSettledEventsForPublicConsulta } from "@/lib/settled-events-public";
 import { updateEventParticipation } from "@/app/consulta/actions";
 
 const eurFmt = new Intl.NumberFormat("pt-PT", {
@@ -34,7 +36,7 @@ const card =
   "mx-auto w-full max-w-2xl rounded-2xl border border-slate-200/80 bg-white/90 p-6 shadow-xl shadow-slate-200/40 backdrop-blur-sm sm:rounded-3xl sm:p-8 dark:border-slate-700/80 dark:bg-slate-900/85 dark:shadow-black/40";
 
 const btnOutline =
-  "touch-target inline-flex min-h-12 items-center justify-center rounded-xl border border-slate-200 bg-white px-4 py-2.5 text-sm font-semibold text-slate-800 transition hover:bg-slate-50 dark:border-slate-600 dark:bg-slate-800 dark:text-slate-100";
+  "touch-target inline-flex min-h-12 items-center justify-center rounded-xl border border-slate-200 bg-white px-4 py-2.5 text-sm font-semibold text-slate-800 transition hover:bg-slate-50 dark:border-slate-600 dark:bg-slate-800 dark:text-slate-100 dark:hover:bg-slate-700";
 
 function ledgerKindBadge(kind: string) {
   if (kind === "CHARGE_MONTH") {
@@ -69,6 +71,8 @@ export default async function ConsultaUserDetailPage({ params }: PageProps) {
   } = data;
 
   const b = balanceCents;
+  const settledPublicEvents = await fetchSettledEventsForPublicConsulta();
+
   const openEvents = await prisma.event.findMany({
     where: { status: "OPEN" },
     orderBy: [{ eventDate: "asc" }, { createdAt: "desc" }],
@@ -236,6 +240,8 @@ export default async function ConsultaUserDetailPage({ params }: PageProps) {
             </div>
           </section>
         ) : null}
+
+        <ConsultaSettledEventsSection events={settledPublicEvents} highlightUserId={userId} />
 
         {ledgerEntries.length === 0 ? (
           <p className="mt-6 text-sm text-slate-600 dark:text-slate-400">

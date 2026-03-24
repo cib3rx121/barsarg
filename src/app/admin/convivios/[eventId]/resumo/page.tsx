@@ -1,5 +1,6 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
+import { setEventPublicConsultaSummary } from "@/app/admin/actions";
 import { CopyTextButton } from "@/components/CopyTextButton";
 import { requireAdminSession } from "@/lib/auth-admin";
 import { splitProfileLabel } from "@/lib/events";
@@ -18,7 +19,9 @@ const dateFmt = new Intl.DateTimeFormat("pt-PT", {
 const card =
   "rounded-2xl border border-slate-200/80 bg-white/90 p-5 shadow-xl shadow-slate-200/40 backdrop-blur-sm sm:rounded-3xl sm:p-6 dark:border-slate-700/80 dark:bg-slate-900/85 dark:shadow-black/40";
 const btnSecondary =
-  "touch-target inline-flex min-h-12 items-center justify-center rounded-xl border border-slate-200 bg-white px-4 py-2.5 text-sm font-semibold text-slate-800 transition hover:bg-slate-50 dark:border-slate-600 dark:bg-slate-800 dark:text-slate-100";
+  "touch-target inline-flex min-h-12 items-center justify-center rounded-xl border border-slate-200 bg-white px-4 py-2.5 text-sm font-semibold text-slate-800 transition hover:bg-slate-50 dark:border-slate-600 dark:bg-slate-800 dark:text-slate-100 dark:hover:bg-slate-700";
+const btnPrimaryEm =
+  "touch-target inline-flex min-h-12 items-center justify-center rounded-xl bg-emerald-600 px-4 py-2.5 text-sm font-semibold text-white shadow-lg shadow-emerald-600/20 transition hover:bg-emerald-500";
 
 type PageProps = {
   params: Promise<{ eventId: string }>;
@@ -179,6 +182,45 @@ export default async function ConvivioResumoPage({ params }: PageProps) {
             )}
           </dl>
         </section>
+
+        {isSettled ? (
+          <section className={`mt-6 ${card}`}>
+            <h2 className="text-lg font-semibold text-slate-900 dark:text-white">
+              Consulta pública (PIN)
+            </h2>
+            <p className="mt-2 text-sm text-slate-600 dark:text-slate-400">
+              Quem tiver acesso à consulta pública vê este resumo (com lista e comprovativo) até ocultares.
+              Continua a poder usar o texto para partilhar à parte.
+            </p>
+            <p className="mt-2 text-sm font-medium text-slate-800 dark:text-slate-200">
+              Estado:{" "}
+              {event.publicConsultaSummary ? (
+                <span className="text-emerald-700 dark:text-emerald-400">visível</span>
+              ) : (
+                <span className="text-slate-600 dark:text-slate-400">oculto</span>
+              )}
+            </p>
+            <div className="mt-4">
+              {event.publicConsultaSummary ? (
+                <form action={setEventPublicConsultaSummary}>
+                  <input type="hidden" name="eventId" value={event.id} />
+                  <input type="hidden" name="visible" value="0" />
+                  <button type="submit" className={btnSecondary}>
+                    Ocultar da consulta pública
+                  </button>
+                </form>
+              ) : (
+                <form action={setEventPublicConsultaSummary}>
+                  <input type="hidden" name="eventId" value={event.id} />
+                  <input type="hidden" name="visible" value="1" />
+                  <button type="submit" className={btnPrimaryEm}>
+                    Mostrar na consulta pública
+                  </button>
+                </form>
+              )}
+            </div>
+          </section>
+        ) : null}
 
         {isSettled && rows.length > 0 ? (
           <section className={`mt-6 ${card}`}>

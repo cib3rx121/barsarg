@@ -961,7 +961,7 @@ export async function applyEventSettlement(formData: FormData) {
 
     await tx.event.update({
       where: { id: eventId },
-      data: { status: "SETTLED" },
+      data: { status: "SETTLED", publicConsultaSummary: true },
     });
   });
 
@@ -975,6 +975,43 @@ export async function applyEventSettlement(formData: FormData) {
   revalidatePath("/admin/convivios");
   revalidatePath(`/admin/convivios/${eventId}/resumo`);
   revalidatePath("/admin");
+  revalidatePath("/consulta");
+  redirect(`/admin/convivios/${eventId}/resumo`);
+}
+
+export async function setEventPublicConsultaSummary(formData: FormData) {
+  await assertAdmin();
+  const eventId = String(formData.get("eventId") ?? "").trim();
+  const visibleRaw = String(formData.get("visible") ?? "").trim();
+  if (!eventId || (visibleRaw !== "0" && visibleRaw !== "1")) {
+    redirect("/admin/convivios?error=4");
+  }
+  const publicConsultaSummary = visibleRaw === "1";
+
+  const event = await prisma.event.findUnique({
+    where: { id: eventId },
+    select: { id: true, status: true },
+  });
+  if (!event || event.status !== "SETTLED") {
+    redirect("/admin/convivios?error=4");
+  }
+
+  await prisma.event.update({
+    where: { id: eventId },
+    data: { publicConsultaSummary },
+  });
+
+  await logAdminEvent({
+    action: "UPDATE",
+    entity: "EVENT_PUBLIC_CONSULTA_SUMMARY",
+    entityId: eventId,
+    note: publicConsultaSummary
+      ? "Resumo visível na consulta pública"
+      : "Resumo oculto na consulta pública",
+  });
+
+  revalidatePath("/admin/convivios");
+  revalidatePath(`/admin/convivios/${eventId}/resumo`);
   revalidatePath("/consulta");
   redirect(`/admin/convivios/${eventId}/resumo`);
 }

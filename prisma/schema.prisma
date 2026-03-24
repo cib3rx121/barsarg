@@ -101,6 +101,8 @@ model Event {
   foodCents   Int                @default(0)
   drinkCents  Int                @default(0)
   otherCents  Int                @default(0)
+  /// Resumo após liquidação visível na consulta pública (PIN) até o admin ocultar.
+  publicConsultaSummary Boolean @default(true)
   createdAt   DateTime           @default(now())
 
   participants EventParticipant[]
