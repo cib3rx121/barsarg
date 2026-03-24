@@ -126,9 +126,9 @@ export function AdminAssociatesWorkspace({
     <>
       <form
         action={createUser}
-        className="grid gap-4 rounded-2xl border border-slate-200/80 bg-slate-50/50 p-4 dark:border-slate-700/80 dark:bg-slate-800/30 sm:grid-cols-2 lg:grid-cols-12 lg:items-end"
+        className="rounded-2xl border border-slate-200/80 bg-slate-50/50 p-4 dark:border-slate-700/80 dark:bg-slate-800/30"
       >
-        <div className="lg:col-span-3">
+        <div>
           <label
             htmlFor="new-name"
             className="mb-1.5 block text-sm font-medium text-slate-700 dark:text-slate-300"
@@ -145,41 +145,45 @@ export function AdminAssociatesWorkspace({
             placeholder="Nome completo"
           />
         </div>
-        <div className="lg:col-span-2">
-          <label
-            htmlFor="new-entry-month"
-            className="mb-1.5 block text-sm font-medium text-slate-700 dark:text-slate-300"
-          >
-            Mês de entrada
-          </label>
-          <MonthYearField
-            idPrefix="new-entry"
-            name="entryDate"
-            required
-            className={inpt}
-            yearStart={currentYear - 8}
-            yearEnd={currentYear + 4}
-          />
+        <div className="mt-4 grid gap-4 md:grid-cols-2">
+          <div>
+            <label
+              htmlFor="new-entry-month"
+              className="mb-1.5 block text-sm font-medium text-slate-700 dark:text-slate-300"
+            >
+              Mês de entrada
+            </label>
+            <MonthYearField
+              idPrefix="new-entry"
+              name="entryDate"
+              required
+              className={inpt}
+              yearStart={currentYear - 8}
+              yearEnd={currentYear + 4}
+              showSelectionSummary={false}
+            />
+          </div>
+          <div>
+            <label
+              htmlFor="new-charge-month"
+              className="mb-1.5 block text-sm font-medium text-slate-700 dark:text-slate-300"
+            >
+              Início da cobrança (opcional)
+            </label>
+            <MonthYearField
+              idPrefix="new-charge"
+              name="chargeStartDate"
+              allowEmpty
+              className={inpt}
+              yearStart={currentYear - 8}
+              yearEnd={currentYear + 4}
+              showSelectionSummary={false}
+            />
+          </div>
         </div>
-        <div className="lg:col-span-2">
-          <label
-            htmlFor="new-charge-month"
-            className="mb-1.5 block text-sm font-medium text-slate-700 dark:text-slate-300"
-          >
-            Mês de início da cobrança (opc.)
-          </label>
-          <MonthYearField
-            idPrefix="new-charge"
-            name="chargeStartDate"
-            allowEmpty
-            className={inpt}
-            yearStart={currentYear - 8}
-            yearEnd={currentYear + 4}
-          />
-        </div>
-        <div className="flex lg:col-span-2">
-          <button type="submit" className={`${btnPrimary} w-full`}>
-            Adicionar
+        <div className="mt-4 flex justify-end">
+          <button type="submit" className={`${btnPrimary} w-full md:w-auto md:min-w-[10rem]`}>
+            Adicionar associado
           </button>
         </div>
       </form>

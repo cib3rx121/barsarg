@@ -26,6 +26,8 @@ type MonthYearFieldProps = {
   allowEmpty?: boolean;
   yearStart?: number;
   yearEnd?: number;
+  showQuickActions?: boolean;
+  showSelectionSummary?: boolean;
 };
 
 function parseMonthKey(value?: string): { year: string; month: string } {
@@ -55,6 +57,8 @@ export function MonthYearField({
   allowEmpty = false,
   yearStart,
   yearEnd,
+  showQuickActions = true,
+  showSelectionSummary = true,
 }: MonthYearFieldProps) {
   const current = currentMonthParts();
   const startYear = yearStart ?? Number(current.year) - 5;
@@ -109,17 +113,19 @@ export function MonthYearField({
         </select>
       </div>
       <div className="flex flex-wrap items-center gap-2">
-        <button
-          type="button"
-          className="rounded-lg border border-slate-200 px-2.5 py-1 text-xs font-medium text-slate-600 transition hover:bg-slate-50 dark:border-slate-600 dark:text-slate-300 dark:hover:bg-slate-800"
-          onClick={() => {
-            setYear(current.year);
-            setMonth(current.month);
-          }}
-        >
-          Mês atual
-        </button>
-        {allowEmpty ? (
+        {showQuickActions ? (
+          <button
+            type="button"
+            className="rounded-lg border border-slate-200 px-2.5 py-1 text-xs font-medium text-slate-600 transition hover:bg-slate-50 dark:border-slate-600 dark:text-slate-300 dark:hover:bg-slate-800"
+            onClick={() => {
+              setYear(current.year);
+              setMonth(current.month);
+            }}
+          >
+            Mês atual
+          </button>
+        ) : null}
+        {allowEmpty && showQuickActions ? (
           <button
             type="button"
             className="rounded-lg border border-slate-200 px-2.5 py-1 text-xs font-medium text-slate-600 transition hover:bg-slate-50 dark:border-slate-600 dark:text-slate-300 dark:hover:bg-slate-800"
@@ -131,9 +137,11 @@ export function MonthYearField({
             Limpar
           </button>
         ) : null}
-        <span className="ml-auto rounded-md bg-slate-100 px-2 py-1 text-[11px] font-medium text-slate-600 dark:bg-slate-800 dark:text-slate-300">
-          {hiddenValue ? `${monthLabel} ${year}` : "Sem mês selecionado"}
-        </span>
+        {showSelectionSummary ? (
+          <span className="ml-auto rounded-md bg-slate-100 px-2 py-1 text-[11px] font-medium text-slate-600 dark:bg-slate-800 dark:text-slate-300">
+            {hiddenValue ? `${monthLabel} ${year}` : "Sem mês selecionado"}
+          </span>
+        ) : null}
       </div>
     </div>
   );

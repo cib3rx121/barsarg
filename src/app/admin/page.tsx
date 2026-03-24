@@ -85,7 +85,6 @@ export default async function AdminPage({ searchParams }: AdminPageProps) {
       ? "Indique um valor válido (EUR) e, se usar mês, o formato AAAA-MM."
       : null;
   const hasDebtFormError = billingErr === "10";
-  const hasAdminCredsError = billingErr === "11";
   const hasConsultaPinError = billingErr === "12";
   const hasPublicNoticeError = billingErr === "13";
   const hasAdminUsernameError = billingErr === "14";
@@ -425,154 +424,154 @@ export default async function AdminPage({ searchParams }: AdminPageProps) {
             <details>
               <summary className={detailsSummary}>Segurança de acesso</summary>
               <p className="mt-3 text-sm text-slate-600 dark:text-slate-400">
-                Área recolhível para não ocupar a página toda. Primeiro altere login/senha
-                do admin; abaixo altere o PIN público.
+                Três ações independentes: login, palavra-passe e PIN público.
               </p>
 
-              {hasAdminCredsError ? (
-                <p className="mt-4 rounded-lg border border-red-200 bg-red-50 px-3 py-2 text-sm text-red-800 dark:border-red-900/50 dark:bg-red-950/35 dark:text-red-200">
-                  Credenciais inválidas. Confirme a palavra-passe atual e os novos dados.
-                </p>
-              ) : null}
-              {hasAdminUsernameError ? (
-                <p className="mt-4 rounded-lg border border-red-200 bg-red-50 px-3 py-2 text-sm text-red-800 dark:border-red-900/50 dark:bg-red-950/35 dark:text-red-200">
-                  Não foi possível alterar o login. Confirme a palavra-passe atual.
-                </p>
-              ) : null}
-              <form action={updateAdminUsername} className="mt-4 space-y-3 rounded-xl border border-slate-200/80 bg-slate-50/70 p-4 dark:border-slate-700/80 dark:bg-slate-800/35">
-                <p className="text-xs font-semibold uppercase tracking-wide text-slate-500 dark:text-slate-400">
-                  1) Alterar login do admin
-                </p>
-                <div>
-                  <label className="mb-1 block text-sm font-medium text-slate-700 dark:text-slate-300">
-                    Login atual
-                  </label>
-                  <input
-                    type="text"
-                    value={quotaRow?.adminUsername ?? process.env.ADMIN_USERNAME ?? ""}
-                    readOnly
-                    className={`${inpt} cursor-not-allowed bg-slate-100/90 dark:bg-slate-800/80`}
-                  />
-                </div>
-                <div>
-                  <label className="mb-1 block text-sm font-medium text-slate-700 dark:text-slate-300">
-                    Palavra-passe atual (confirmação)
-                  </label>
-                  <input
-                    name="currentPasswordForUsername"
-                    type="password"
-                    required
-                    className={inpt}
-                  />
-                </div>
-                <div>
-                  <label className="mb-1 block text-sm font-medium text-slate-700 dark:text-slate-300">
-                    Novo login (nome de utilizador)
-                  </label>
-                  <input
-                    name="newUsernameOnly"
-                    type="text"
-                    required
-                    defaultValue={quotaRow?.adminUsername ?? process.env.ADMIN_USERNAME ?? ""}
-                    className={inpt}
-                  />
-                </div>
-                <button type="submit" className={btnPrimary}>
-                  Guardar login
-                </button>
-              </form>
+              <section className="mt-4 rounded-2xl border border-slate-200/80 bg-slate-50/70 p-4 dark:border-slate-700/80 dark:bg-slate-800/35">
+                <h3 className="text-sm font-semibold text-slate-900 dark:text-slate-100">
+                  Alterar login do admin
+                </h3>
+                {hasAdminUsernameError ? (
+                  <p className="mt-3 rounded-lg border border-red-200 bg-red-50 px-3 py-2 text-sm text-red-800 dark:border-red-900/50 dark:bg-red-950/35 dark:text-red-200">
+                    Não foi possível alterar o login. Confirme a palavra-passe atual.
+                  </p>
+                ) : null}
+                <form action={updateAdminUsername} className="mt-3 space-y-3">
+                  <div>
+                    <label className="mb-1 block text-sm font-medium text-slate-700 dark:text-slate-300">
+                      Login atual
+                    </label>
+                    <input
+                      type="text"
+                      value={quotaRow?.adminUsername ?? process.env.ADMIN_USERNAME ?? ""}
+                      readOnly
+                      className={`${inpt} cursor-not-allowed bg-slate-100/90 dark:bg-slate-800/80`}
+                    />
+                  </div>
+                  <div>
+                    <label className="mb-1 block text-sm font-medium text-slate-700 dark:text-slate-300">
+                      Palavra-passe atual (confirmação)
+                    </label>
+                    <input
+                      name="currentPasswordForUsername"
+                      type="password"
+                      required
+                      className={inpt}
+                    />
+                  </div>
+                  <div>
+                    <label className="mb-1 block text-sm font-medium text-slate-700 dark:text-slate-300">
+                      Novo login
+                    </label>
+                    <input
+                      name="newUsernameOnly"
+                      type="text"
+                      required
+                      defaultValue={quotaRow?.adminUsername ?? process.env.ADMIN_USERNAME ?? ""}
+                      className={inpt}
+                    />
+                  </div>
+                  <button type="submit" className={btnPrimary}>
+                    Guardar login
+                  </button>
+                </form>
+              </section>
 
-              {hasAdminPasswordError ? (
-                <p className="mt-4 rounded-lg border border-red-200 bg-red-50 px-3 py-2 text-sm text-red-800 dark:border-red-900/50 dark:bg-red-950/35 dark:text-red-200">
-                  Não foi possível alterar a palavra-passe. Confirme a palavra-passe atual e
-                  a confirmação da nova senha.
-                </p>
-              ) : null}
-              <form action={updateAdminPassword} className="mt-4 space-y-3 rounded-xl border border-slate-200/80 bg-slate-50/70 p-4 dark:border-slate-700/80 dark:bg-slate-800/35">
-                <p className="text-xs font-semibold uppercase tracking-wide text-slate-500 dark:text-slate-400">
-                  2) Alterar palavra-passe do admin
-                </p>
-                <div>
-                  <label className="mb-1 block text-sm font-medium text-slate-700 dark:text-slate-300">
-                    Palavra-passe atual
-                  </label>
-                  <input
-                    name="currentPasswordForPassword"
-                    type="password"
-                    required
-                    className={inpt}
-                  />
-                </div>
-                <div className="grid gap-3 sm:grid-cols-2">
+              <section className="mt-4 rounded-2xl border border-slate-200/80 bg-slate-50/70 p-4 dark:border-slate-700/80 dark:bg-slate-800/35">
+                <h3 className="text-sm font-semibold text-slate-900 dark:text-slate-100">
+                  Alterar palavra-passe do admin
+                </h3>
+                {hasAdminPasswordError ? (
+                  <p className="mt-3 rounded-lg border border-red-200 bg-red-50 px-3 py-2 text-sm text-red-800 dark:border-red-900/50 dark:bg-red-950/35 dark:text-red-200">
+                    Não foi possível alterar a palavra-passe. Confirme a palavra-passe
+                    atual e a confirmação da nova senha.
+                  </p>
+                ) : null}
+                <form action={updateAdminPassword} className="mt-3 space-y-3">
                   <div>
                     <label className="mb-1 block text-sm font-medium text-slate-700 dark:text-slate-300">
-                      Nova palavra-passe
+                      Palavra-passe atual
                     </label>
                     <input
-                      name="newPasswordOnly"
+                      name="currentPasswordForPassword"
                       type="password"
-                      minLength={6}
                       required
                       className={inpt}
                     />
                   </div>
-                  <div>
-                    <label className="mb-1 block text-sm font-medium text-slate-700 dark:text-slate-300">
-                      Confirmar nova palavra-passe
-                    </label>
-                    <input
-                      name="confirmPasswordOnly"
-                      type="password"
-                      minLength={6}
-                      required
-                      className={inpt}
-                    />
+                  <div className="grid gap-3 sm:grid-cols-2">
+                    <div>
+                      <label className="mb-1 block text-sm font-medium text-slate-700 dark:text-slate-300">
+                        Nova palavra-passe
+                      </label>
+                      <input
+                        name="newPasswordOnly"
+                        type="password"
+                        minLength={6}
+                        required
+                        className={inpt}
+                      />
+                    </div>
+                    <div>
+                      <label className="mb-1 block text-sm font-medium text-slate-700 dark:text-slate-300">
+                        Confirmar nova palavra-passe
+                      </label>
+                      <input
+                        name="confirmPasswordOnly"
+                        type="password"
+                        minLength={6}
+                        required
+                        className={inpt}
+                      />
+                    </div>
                   </div>
-                </div>
-                <button type="submit" className={btnPrimary}>
-                  Guardar palavra-passe
-                </button>
-              </form>
+                  <button type="submit" className={btnPrimary}>
+                    Guardar palavra-passe
+                  </button>
+                </form>
+              </section>
 
-              {hasConsultaPinError ? (
-                <p className="mt-5 rounded-lg border border-red-200 bg-red-50 px-3 py-2 text-sm text-red-800 dark:border-red-900/50 dark:bg-red-950/35 dark:text-red-200">
-                  PIN inválido. Use apenas números (4 a 10 dígitos) e confirme corretamente.
-                </p>
-              ) : null}
-              <form action={updateConsultaPin} className="mt-4 space-y-3 rounded-xl border border-slate-200/80 bg-slate-50/70 p-4 dark:border-slate-700/80 dark:bg-slate-800/35">
-                <p className="text-xs font-semibold uppercase tracking-wide text-slate-500 dark:text-slate-400">
-                  2) Alterar PIN da consulta pública
-                </p>
-                <div className="grid gap-3 sm:grid-cols-2">
-                  <div>
-                    <label className="mb-1 block text-sm font-medium text-slate-700 dark:text-slate-300">
-                      Novo PIN
-                    </label>
-                    <input
-                      name="consultaPin"
-                      type="password"
-                      inputMode="numeric"
-                      required
-                      className={inpt}
-                    />
+              <section className="mt-4 rounded-2xl border border-slate-200/80 bg-slate-50/70 p-4 dark:border-slate-700/80 dark:bg-slate-800/35">
+                <h3 className="text-sm font-semibold text-slate-900 dark:text-slate-100">
+                  Alterar PIN da consulta pública
+                </h3>
+                {hasConsultaPinError ? (
+                  <p className="mt-3 rounded-lg border border-red-200 bg-red-50 px-3 py-2 text-sm text-red-800 dark:border-red-900/50 dark:bg-red-950/35 dark:text-red-200">
+                    PIN inválido. Use apenas números (4 a 10 dígitos) e confirme corretamente.
+                  </p>
+                ) : null}
+                <form action={updateConsultaPin} className="mt-3 space-y-3">
+                  <div className="grid gap-3 sm:grid-cols-2">
+                    <div>
+                      <label className="mb-1 block text-sm font-medium text-slate-700 dark:text-slate-300">
+                        Novo PIN
+                      </label>
+                      <input
+                        name="consultaPin"
+                        type="password"
+                        inputMode="numeric"
+                        required
+                        className={inpt}
+                      />
+                    </div>
+                    <div>
+                      <label className="mb-1 block text-sm font-medium text-slate-700 dark:text-slate-300">
+                        Confirmar PIN
+                      </label>
+                      <input
+                        name="confirmConsultaPin"
+                        type="password"
+                        inputMode="numeric"
+                        required
+                        className={inpt}
+                      />
+                    </div>
                   </div>
-                  <div>
-                    <label className="mb-1 block text-sm font-medium text-slate-700 dark:text-slate-300">
-                      Confirmar PIN
-                    </label>
-                    <input
-                      name="confirmConsultaPin"
-                      type="password"
-                      inputMode="numeric"
-                      required
-                      className={inpt}
-                    />
-                  </div>
-                </div>
-                <button type="submit" className={btnSecondary}>
-                  Guardar PIN
-                </button>
-              </form>
+                  <button type="submit" className={btnSecondary}>
+                    Guardar PIN
+                  </button>
+                </form>
+              </section>
             </details>
           </div>
 
