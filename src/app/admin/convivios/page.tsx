@@ -176,27 +176,50 @@ export default async function ConviviosAdminPage() {
                     <div className="sm:col-span-2 flex items-center text-xs text-slate-500 dark:text-slate-400">
                       Use os campos abaixo só quando quiser separar por categoria.
                     </div>
-                    <input
-                      name="foodEur"
-                      defaultValue={(event.foodCents / 100).toFixed(2).replace(".", ",")}
-                      className={inpt}
-                      placeholder="Comida €"
-                    />
-                    <input
-                      name="drinkEur"
-                      defaultValue={(event.drinkCents / 100).toFixed(2).replace(".", ",")}
-                      className={inpt}
-                      placeholder="Bebida €"
-                    />
-                    <input
-                      name="otherEur"
-                      defaultValue={(event.otherCents / 100).toFixed(2).replace(".", ",")}
-                      className={inpt}
-                      placeholder="Outros €"
-                    />
+                    <div>
+                      <label className="mb-1 block text-xs font-semibold uppercase tracking-wide text-slate-500 dark:text-slate-400">
+                        Comida (€)
+                      </label>
+                      <input
+                        name="foodEur"
+                        defaultValue={(event.foodCents / 100).toFixed(2).replace(".", ",")}
+                        className={inpt}
+                        placeholder="Ex.: 45,00"
+                        aria-label="Custo de comida em euros"
+                      />
+                    </div>
+                    <div>
+                      <label className="mb-1 block text-xs font-semibold uppercase tracking-wide text-slate-500 dark:text-slate-400">
+                        Bebida (€)
+                      </label>
+                      <input
+                        name="drinkEur"
+                        defaultValue={(event.drinkCents / 100).toFixed(2).replace(".", ",")}
+                        className={inpt}
+                        placeholder="Ex.: 30,00"
+                        aria-label="Custo de bebida em euros"
+                      />
+                    </div>
+                    <div>
+                      <label className="mb-1 block text-xs font-semibold uppercase tracking-wide text-slate-500 dark:text-slate-400">
+                        Outros (€)
+                      </label>
+                      <input
+                        name="otherEur"
+                        defaultValue={(event.otherCents / 100).toFixed(2).replace(".", ",")}
+                        className={inpt}
+                        placeholder="Ex.: 10,00"
+                        aria-label="Outros custos em euros"
+                      />
+                    </div>
                     <button type="submit" className={btnSecondary}>
                       Guardar custos
                     </button>
+                    <p className="sm:col-span-4 text-xs text-slate-500 dark:text-slate-400">
+                      Dica: use o <span className="font-semibold">Total único</span> para registo rápido.
+                      Use <span className="font-semibold">Comida/Bebida/Outros</span> apenas quando quiser
+                      separar custos.
+                    </p>
                   </form>
 
                   <div className="mt-4 grid gap-2 sm:grid-cols-2">
