@@ -159,7 +159,6 @@ export default async function ConsultaUserDetailPage({ params }: PageProps) {
                       >
                         <option value="ALL">Tudo</option>
                         <option value="FOOD_ONLY">Só comida</option>
-                        <option value="NO_DRINK">Sem bebida</option>
                       </select>
                       <button type="submit" className="rounded-lg bg-emerald-600 px-3 py-2 text-sm font-semibold text-white hover:bg-emerald-500">
                         Guardar

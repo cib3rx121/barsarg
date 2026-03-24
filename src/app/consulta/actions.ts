@@ -18,8 +18,7 @@ export async function updateEventParticipation(formData: FormData) {
   }
 
   const normalizedStatus = status === "NO" ? "NO" : "YES";
-  const normalizedProfile =
-    splitProfile === "FOOD_ONLY" || splitProfile === "NO_DRINK" ? splitProfile : "ALL";
+  const normalizedProfile = splitProfile === "FOOD_ONLY" ? "FOOD_ONLY" : "ALL";
 
   await prisma.eventParticipant.upsert({
     where: { eventId_userId: { eventId, userId } },

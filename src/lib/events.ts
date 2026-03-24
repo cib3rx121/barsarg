@@ -1,4 +1,4 @@
-export type SplitProfile = "ALL" | "FOOD_ONLY" | "NO_DRINK";
+export type SplitProfile = "ALL" | "FOOD_ONLY";
 
 export type EventParticipantRow = {
   userId: string;
@@ -7,8 +7,12 @@ export type EventParticipantRow = {
 };
 
 function normalizeProfile(raw: string): SplitProfile {
-  if (raw === "FOOD_ONLY" || raw === "NO_DRINK" || raw === "ALL") {
+  if (raw === "FOOD_ONLY" || raw === "ALL") {
     return raw;
+  }
+  // Compatibilidade com dados antigos ("NO_DRINK" passa a "FOOD_ONLY")
+  if (raw === "NO_DRINK") {
+    return "FOOD_ONLY";
   }
   return "ALL";
 }
@@ -41,10 +45,10 @@ export function computeEventSplit(input: {
     }));
 
   const foodUsers = active
-    .filter((p) => p.profile === "ALL" || p.profile === "FOOD_ONLY" || p.profile === "NO_DRINK")
+    .filter((p) => p.profile === "ALL" || p.profile === "FOOD_ONLY")
     .map((p) => p.userId);
   const drinkUsers = active.filter((p) => p.profile === "ALL").map((p) => p.userId);
-  const otherUsers = active.filter((p) => p.profile === "ALL" || p.profile === "NO_DRINK").map((p) => p.userId);
+  const otherUsers = active.filter((p) => p.profile === "ALL").map((p) => p.userId);
 
   const foodMap = splitCategory(Math.max(0, input.foodCents), foodUsers);
   const drinkMap = splitCategory(Math.max(0, input.drinkCents), drinkUsers);
@@ -61,8 +65,6 @@ export function splitProfileLabel(raw: string): string {
   switch (normalizeProfile(raw)) {
     case "FOOD_ONLY":
       return "Só comida";
-    case "NO_DRINK":
-      return "Sem bebida";
     default:
       return "Tudo";
   }

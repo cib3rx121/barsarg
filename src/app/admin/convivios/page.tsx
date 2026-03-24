@@ -281,7 +281,6 @@ export default async function ConviviosAdminPage() {
                                 >
                                   <option value="ALL">Tudo</option>
                                   <option value="FOOD_ONLY">Só comida</option>
-                                  <option value="NO_DRINK">Sem bebida</option>
                                 </select>
                                 <button
                                   type="submit"
