@@ -5,12 +5,17 @@ import { revalidatePath } from "next/cache";
 import { cookies } from "next/headers";
 import { redirect } from "next/navigation";
 import {
+  currentMonthKeyUtc,
   monthKeyFromUtcDate,
   monthKeysInclusive,
   parseMonthKey,
 } from "@/lib/month-keys";
 import { ensureQuotaSettingsExists, verifyAdminPassword } from "@/lib/app-settings";
-import { backfillMissingMonthlyCharges, reconcileUserCharges } from "@/lib/balance";
+import {
+  backfillMissingMonthlyCharges,
+  computeBalancesForUsers,
+  reconcileUserCharges,
+} from "@/lib/balance";
 import { prisma } from "@/lib/prisma";
 import { QUOTA_SETTINGS_ID } from "@/lib/quota";
 import { hashSecret } from "@/lib/secret-hash";
@@ -486,5 +491,84 @@ export async function clearPublicNotice() {
   });
   revalidatePath("/admin");
   revalidatePath("/consulta");
+  redirect("/admin");
+}
+
+function monthRangeUtc(monthKey: string): { start: Date; endExclusive: Date } {
+  const [y, m] = monthKey.split("-").map(Number);
+  const start = new Date(Date.UTC(y, m - 1, 1, 0, 0, 0, 0));
+  const endExclusive = new Date(Date.UTC(y, m, 1, 0, 0, 0, 0));
+  return { start, endExclusive };
+}
+
+export async function closeMonthSnapshot(formData: FormData) {
+  await assertAdmin();
+
+  const raw = String(formData.get("snapshotMonthKey") ?? "").trim();
+  const monthKey = raw ? parseMonthKey(raw) : currentMonthKeyUtc();
+  if (!monthKey) {
+    redirect("/admin?error=16");
+  }
+
+  const exists = await prisma.monthClosure.findUnique({
+    where: { monthKey },
+    select: { id: true },
+  });
+  if (exists) {
+    redirect("/admin?error=16");
+  }
+
+  const users = await prisma.user.findMany({
+    where: { active: true },
+    select: { id: true },
+  });
+  const balances = await computeBalancesForUsers(users);
+
+  let debtUsers = 0;
+  let creditUsers = 0;
+  let totalDebtCents = 0;
+  let totalCreditCents = 0;
+  for (const u of users) {
+    const cents = balances.get(u.id)?.balanceCents ?? 0;
+    if (cents > 0) {
+      debtUsers += 1;
+      totalDebtCents += cents;
+    } else if (cents < 0) {
+      creditUsers += 1;
+      totalCreditCents += -cents;
+    }
+  }
+
+  const { start, endExclusive } = monthRangeUtc(monthKey);
+  const receivedAgg = await prisma.ledgerEntry.aggregate({
+    where: {
+      kind: "PAYMENT",
+      createdAt: { gte: start, lt: endExclusive },
+    },
+    _sum: { deltaCents: true },
+  });
+  const paymentDelta = receivedAgg._sum.deltaCents ?? 0;
+  const totalReceivedCents = paymentDelta < 0 ? -paymentDelta : 0;
+
+  await prisma.monthClosure.create({
+    data: {
+      monthKey,
+      totalUsers: users.length,
+      debtUsers,
+      creditUsers,
+      totalDebtCents,
+      totalCreditCents,
+      totalReceivedCents,
+    },
+  });
+
+  await logAdminEvent({
+    action: "CREATE",
+    entity: "MONTH_CLOSURE",
+    entityId: monthKey,
+    note: `Fecho mensal criado para ${monthKey}`,
+  });
+
+  revalidatePath("/admin");
   redirect("/admin");
 }

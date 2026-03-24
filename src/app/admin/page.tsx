@@ -5,6 +5,7 @@ import { redirect } from "next/navigation";
 import {
   clearPublicNotice,
   createAdminAccessUser,
+  closeMonthSnapshot,
   saveGlobalQuota,
   updateAdminPassword,
   updateConsultaPin,
@@ -17,6 +18,7 @@ import {
   firstChargeMonthKey,
 } from "@/lib/balance";
 import {
+  currentMonthKeyUtc,
   formatMonthKeyLongPt,
   monthKeyFromUtcDate,
 } from "@/lib/month-keys";
@@ -89,6 +91,7 @@ export default async function AdminPage({ searchParams }: AdminPageProps) {
   const hasPublicNoticeError = billingErr === "13";
   const hasAdminCreateUserError = billingErr === "14";
   const hasAdminPasswordError = billingErr === "15";
+  const hasMonthCloseError = billingErr === "16";
 
   const [users, quotaRow] = await Promise.all([
     prisma.user.findMany({
@@ -104,6 +107,10 @@ export default async function AdminPage({ searchParams }: AdminPageProps) {
     orderBy: { createdAt: "desc" },
     take: 12,
   });
+  const monthClosures = await prisma.monthClosure.findMany({
+    orderBy: { closedAt: "desc" },
+    take: 12,
+  });
 
   const publicOrigin = await getPublicOrigin();
   const consultaUrl = `${publicOrigin}/consulta`;
@@ -112,6 +119,7 @@ export default async function AdminPage({ searchParams }: AdminPageProps) {
   const quotaDefaultDisplay = quotaRow
     ? (quotaRow.amountCents / 100).toFixed(2).replace(".", ",")
     : "";
+  const currentMonth = currentMonthKeyUtc();
 
   const serializedMembers = users.map((u) => {
     const d = balanceByUser.get(u.id);
@@ -376,6 +384,73 @@ export default async function AdminPage({ searchParams }: AdminPageProps) {
               </div>
             </div>
           </div>
+        </section>
+
+        <section className={`admin-panel-section mt-6 ${card}`}>
+          <h2 className="text-lg font-semibold text-slate-900 dark:text-white">
+            Fecho mensal
+          </h2>
+          <p className="mt-2 text-sm text-slate-600 dark:text-slate-400">
+            Regista um snapshot do mês para histórico de gestão.
+          </p>
+          {hasMonthCloseError ? (
+            <p className="mt-3 rounded-lg border border-red-200 bg-red-50 px-3 py-2 text-sm text-red-800 dark:border-red-900/50 dark:bg-red-950/35 dark:text-red-200">
+              Mês inválido ou já fechado.
+            </p>
+          ) : null}
+          <form action={closeMonthSnapshot} className="mt-4 grid gap-3 sm:grid-cols-[1fr_auto]">
+            <div>
+              <label className="mb-1 block text-sm font-medium text-slate-700 dark:text-slate-300">
+                Mês a fechar
+              </label>
+              <input
+                name="snapshotMonthKey"
+                type="month"
+                defaultValue={currentMonth}
+                className={inpt}
+              />
+            </div>
+            <button type="submit" className={`${btnPrimary} sm:self-end`}>
+              Fechar mês
+            </button>
+          </form>
+
+          {monthClosures.length > 0 ? (
+            <div className="mt-5 overflow-x-auto rounded-xl border border-slate-200/80 dark:border-slate-700/80">
+              <table className="w-full min-w-[640px] text-left text-sm">
+                <thead className="bg-slate-100/90 text-slate-700 dark:bg-slate-800/90 dark:text-slate-200">
+                  <tr>
+                    <th className="px-3 py-2 font-semibold">Mês</th>
+                    <th className="px-3 py-2 font-semibold">Associados</th>
+                    <th className="px-3 py-2 font-semibold">Em dívida</th>
+                    <th className="px-3 py-2 font-semibold">Com crédito</th>
+                    <th className="px-3 py-2 font-semibold">Dívida total</th>
+                    <th className="px-3 py-2 font-semibold">Recebido no mês</th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-slate-200/70 dark:divide-slate-700/70">
+                  {monthClosures.map((row) => (
+                    <tr key={row.id} className="bg-white/90 dark:bg-slate-900/30">
+                      <td className="px-3 py-2">{formatMonthKeyLongPt(row.monthKey)}</td>
+                      <td className="px-3 py-2 tabular-nums">{row.totalUsers}</td>
+                      <td className="px-3 py-2 tabular-nums">{row.debtUsers}</td>
+                      <td className="px-3 py-2 tabular-nums">{row.creditUsers}</td>
+                      <td className="px-3 py-2 tabular-nums">
+                        {eurFmt.format(row.totalDebtCents / 100)}
+                      </td>
+                      <td className="px-3 py-2 tabular-nums">
+                        {eurFmt.format(row.totalReceivedCents / 100)}
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          ) : (
+            <p className="mt-4 text-sm text-slate-500 dark:text-slate-400">
+              Ainda não existem fechos mensais.
+            </p>
+          )}
         </section>
 
         <section id="auditoria" className={`admin-panel-section mt-6 scroll-mt-24 ${card}`}>

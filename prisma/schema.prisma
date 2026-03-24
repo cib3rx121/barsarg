@@ -76,3 +76,15 @@ model AuditLog {
 
   @@index([createdAt])
 }
+
+model MonthClosure {
+  id                String   @id @default(uuid()) @db.Uuid
+  monthKey          String   @unique
+  totalUsers        Int
+  debtUsers         Int
+  creditUsers       Int
+  totalDebtCents    Int
+  totalCreditCents  Int
+  totalReceivedCents Int
+  closedAt          DateTime @default(now())
+}
