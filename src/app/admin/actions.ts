@@ -381,6 +381,70 @@ export async function updateAdminCredentials(formData: FormData) {
   redirect("/admin");
 }
 
+export async function updateAdminUsername(formData: FormData) {
+  await assertAdmin();
+
+  const currentPassword = String(formData.get("currentPasswordForUsername") ?? "").trim();
+  const newUsername = String(formData.get("newUsernameOnly") ?? "").trim();
+  if (!currentPassword || !newUsername) {
+    redirect("/admin?error=14");
+  }
+
+  const currentOk = await verifyAdminPassword(currentPassword);
+  if (!currentOk) {
+    redirect("/admin?error=14");
+  }
+
+  await ensureQuotaSettingsExists();
+  await prisma.quotaSettings.update({
+    where: { id: QUOTA_SETTINGS_ID },
+    data: { adminUsername: newUsername },
+  });
+  await logAdminEvent({
+    action: "UPDATE",
+    entity: "ADMIN_USERNAME",
+    entityId: QUOTA_SETTINGS_ID,
+    note: `Login admin alterado para ${newUsername}`,
+  });
+
+  revalidatePath("/admin");
+  redirect("/admin");
+}
+
+export async function updateAdminPassword(formData: FormData) {
+  await assertAdmin();
+
+  const currentPassword = String(formData.get("currentPasswordForPassword") ?? "").trim();
+  const newPassword = String(formData.get("newPasswordOnly") ?? "").trim();
+  const confirmPassword = String(formData.get("confirmPasswordOnly") ?? "").trim();
+  if (!currentPassword || !newPassword || !confirmPassword) {
+    redirect("/admin?error=15");
+  }
+  if (newPassword.length < 6 || newPassword !== confirmPassword) {
+    redirect("/admin?error=15");
+  }
+
+  const currentOk = await verifyAdminPassword(currentPassword);
+  if (!currentOk) {
+    redirect("/admin?error=15");
+  }
+
+  await ensureQuotaSettingsExists();
+  await prisma.quotaSettings.update({
+    where: { id: QUOTA_SETTINGS_ID },
+    data: { adminPasswordHash: hashSecret(newPassword) },
+  });
+  await logAdminEvent({
+    action: "UPDATE",
+    entity: "ADMIN_PASSWORD",
+    entityId: QUOTA_SETTINGS_ID,
+    note: "Palavra-passe do admin atualizada",
+  });
+
+  revalidatePath("/admin");
+  redirect("/admin");
+}
+
 export async function updateConsultaPin(formData: FormData) {
   await assertAdmin();
 
@@ -433,6 +497,24 @@ export async function updatePublicNotice(formData: FormData) {
     note: note ? "Aviso público atualizado" : "Aviso público removido",
   });
 
+  revalidatePath("/admin");
+  revalidatePath("/consulta");
+  redirect("/admin");
+}
+
+export async function clearPublicNotice() {
+  await assertAdmin();
+  await ensureQuotaSettingsExists();
+  await prisma.quotaSettings.update({
+    where: { id: QUOTA_SETTINGS_ID },
+    data: { publicNotice: null },
+  });
+  await logAdminEvent({
+    action: "UPDATE",
+    entity: "PUBLIC_NOTICE",
+    entityId: QUOTA_SETTINGS_ID,
+    note: "Aviso público removido",
+  });
   revalidatePath("/admin");
   revalidatePath("/consulta");
   redirect("/admin");

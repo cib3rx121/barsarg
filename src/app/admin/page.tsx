@@ -3,8 +3,10 @@ import Link from "next/link";
 import { cookies } from "next/headers";
 import { redirect } from "next/navigation";
 import {
+  clearPublicNotice,
   saveGlobalQuota,
-  updateAdminCredentials,
+  updateAdminPassword,
+  updateAdminUsername,
   updateConsultaPin,
   updatePublicNotice,
 } from "./actions";
@@ -86,6 +88,8 @@ export default async function AdminPage({ searchParams }: AdminPageProps) {
   const hasAdminCredsError = billingErr === "11";
   const hasConsultaPinError = billingErr === "12";
   const hasPublicNoticeError = billingErr === "13";
+  const hasAdminUsernameError = billingErr === "14";
+  const hasAdminPasswordError = billingErr === "15";
 
   const [users, quotaRow] = await Promise.all([
     prisma.user.findMany({
@@ -430,9 +434,14 @@ export default async function AdminPage({ searchParams }: AdminPageProps) {
                   Credenciais inválidas. Confirme a palavra-passe atual e os novos dados.
                 </p>
               ) : null}
-              <form action={updateAdminCredentials} className="mt-4 space-y-3 rounded-xl border border-slate-200/80 bg-slate-50/70 p-4 dark:border-slate-700/80 dark:bg-slate-800/35">
+              {hasAdminUsernameError ? (
+                <p className="mt-4 rounded-lg border border-red-200 bg-red-50 px-3 py-2 text-sm text-red-800 dark:border-red-900/50 dark:bg-red-950/35 dark:text-red-200">
+                  Não foi possível alterar o login. Confirme a palavra-passe atual.
+                </p>
+              ) : null}
+              <form action={updateAdminUsername} className="mt-4 space-y-3 rounded-xl border border-slate-200/80 bg-slate-50/70 p-4 dark:border-slate-700/80 dark:bg-slate-800/35">
                 <p className="text-xs font-semibold uppercase tracking-wide text-slate-500 dark:text-slate-400">
-                  1) Alterar credenciais do admin
+                  1) Alterar login do admin
                 </p>
                 <div>
                   <label className="mb-1 block text-sm font-medium text-slate-700 dark:text-slate-300">
@@ -449,17 +458,48 @@ export default async function AdminPage({ searchParams }: AdminPageProps) {
                   <label className="mb-1 block text-sm font-medium text-slate-700 dark:text-slate-300">
                     Palavra-passe atual (confirmação)
                   </label>
-                  <input name="currentPassword" type="password" required className={inpt} />
+                  <input
+                    name="currentPasswordForUsername"
+                    type="password"
+                    required
+                    className={inpt}
+                  />
                 </div>
                 <div>
                   <label className="mb-1 block text-sm font-medium text-slate-700 dark:text-slate-300">
                     Novo login (nome de utilizador)
                   </label>
                   <input
-                    name="newUsername"
+                    name="newUsernameOnly"
                     type="text"
                     required
                     defaultValue={quotaRow?.adminUsername ?? process.env.ADMIN_USERNAME ?? ""}
+                    className={inpt}
+                  />
+                </div>
+                <button type="submit" className={btnPrimary}>
+                  Guardar login
+                </button>
+              </form>
+
+              {hasAdminPasswordError ? (
+                <p className="mt-4 rounded-lg border border-red-200 bg-red-50 px-3 py-2 text-sm text-red-800 dark:border-red-900/50 dark:bg-red-950/35 dark:text-red-200">
+                  Não foi possível alterar a palavra-passe. Confirme a palavra-passe atual e
+                  a confirmação da nova senha.
+                </p>
+              ) : null}
+              <form action={updateAdminPassword} className="mt-4 space-y-3 rounded-xl border border-slate-200/80 bg-slate-50/70 p-4 dark:border-slate-700/80 dark:bg-slate-800/35">
+                <p className="text-xs font-semibold uppercase tracking-wide text-slate-500 dark:text-slate-400">
+                  2) Alterar palavra-passe do admin
+                </p>
+                <div>
+                  <label className="mb-1 block text-sm font-medium text-slate-700 dark:text-slate-300">
+                    Palavra-passe atual
+                  </label>
+                  <input
+                    name="currentPasswordForPassword"
+                    type="password"
+                    required
                     className={inpt}
                   />
                 </div>
@@ -469,7 +509,7 @@ export default async function AdminPage({ searchParams }: AdminPageProps) {
                       Nova palavra-passe
                     </label>
                     <input
-                      name="newPassword"
+                      name="newPasswordOnly"
                       type="password"
                       minLength={6}
                       required
@@ -481,7 +521,7 @@ export default async function AdminPage({ searchParams }: AdminPageProps) {
                       Confirmar nova palavra-passe
                     </label>
                     <input
-                      name="confirmPassword"
+                      name="confirmPasswordOnly"
                       type="password"
                       minLength={6}
                       required
@@ -490,7 +530,7 @@ export default async function AdminPage({ searchParams }: AdminPageProps) {
                   </div>
                 </div>
                 <button type="submit" className={btnPrimary}>
-                  Guardar credenciais
+                  Guardar palavra-passe
                 </button>
               </form>
 
@@ -563,6 +603,11 @@ export default async function AdminPage({ searchParams }: AdminPageProps) {
                 </div>
                 <button type="submit" className={btnPrimary}>
                   Guardar aviso
+                </button>
+              </form>
+              <form action={clearPublicNotice} className="mt-2">
+                <button type="submit" className={btnSecondary}>
+                  Remover aviso
                 </button>
               </form>
             </details>
