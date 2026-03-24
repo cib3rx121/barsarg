@@ -431,6 +431,9 @@ export default async function AdminPage({ searchParams }: AdminPageProps) {
                 <h3 className="text-sm font-semibold text-slate-900 dark:text-slate-100">
                   Alterar login do admin
                 </h3>
+                <p className="mt-1 text-xs text-slate-500 dark:text-slate-400">
+                  Use este bloco apenas para mudar o nome de utilizador.
+                </p>
                 {hasAdminUsernameError ? (
                   <p className="mt-3 rounded-lg border border-red-200 bg-red-50 px-3 py-2 text-sm text-red-800 dark:border-red-900/50 dark:bg-red-950/35 dark:text-red-200">
                     Não foi possível alterar o login. Confirme a palavra-passe atual.
@@ -469,6 +472,7 @@ export default async function AdminPage({ searchParams }: AdminPageProps) {
                       required
                       defaultValue={quotaRow?.adminUsername ?? process.env.ADMIN_USERNAME ?? ""}
                       className={inpt}
+                      placeholder="ex.: admin.bar"
                     />
                   </div>
                   <button type="submit" className={btnPrimary}>
@@ -481,6 +485,9 @@ export default async function AdminPage({ searchParams }: AdminPageProps) {
                 <h3 className="text-sm font-semibold text-slate-900 dark:text-slate-100">
                   Alterar palavra-passe do admin
                 </h3>
+                <p className="mt-1 text-xs text-slate-500 dark:text-slate-400">
+                  Use este bloco apenas para mudar a palavra-passe.
+                </p>
                 {hasAdminPasswordError ? (
                   <p className="mt-3 rounded-lg border border-red-200 bg-red-50 px-3 py-2 text-sm text-red-800 dark:border-red-900/50 dark:bg-red-950/35 dark:text-red-200">
                     Não foi possível alterar a palavra-passe. Confirme a palavra-passe
@@ -499,7 +506,7 @@ export default async function AdminPage({ searchParams }: AdminPageProps) {
                       className={inpt}
                     />
                   </div>
-                  <div className="grid gap-3 sm:grid-cols-2">
+                  <div className="grid gap-3">
                     <div>
                       <label className="mb-1 block text-sm font-medium text-slate-700 dark:text-slate-300">
                         Nova palavra-passe
@@ -535,13 +542,16 @@ export default async function AdminPage({ searchParams }: AdminPageProps) {
                 <h3 className="text-sm font-semibold text-slate-900 dark:text-slate-100">
                   Alterar PIN da consulta pública
                 </h3>
+                <p className="mt-1 text-xs text-slate-500 dark:text-slate-400">
+                  PIN numérico (4 a 10 dígitos) usado pelos utilizadores.
+                </p>
                 {hasConsultaPinError ? (
                   <p className="mt-3 rounded-lg border border-red-200 bg-red-50 px-3 py-2 text-sm text-red-800 dark:border-red-900/50 dark:bg-red-950/35 dark:text-red-200">
                     PIN inválido. Use apenas números (4 a 10 dígitos) e confirme corretamente.
                   </p>
                 ) : null}
                 <form action={updateConsultaPin} className="mt-3 space-y-3">
-                  <div className="grid gap-3 sm:grid-cols-2">
+                  <div className="grid gap-3">
                     <div>
                       <label className="mb-1 block text-sm font-medium text-slate-700 dark:text-slate-300">
                         Novo PIN

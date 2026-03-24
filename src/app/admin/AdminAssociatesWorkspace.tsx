@@ -420,7 +420,7 @@ export function AdminAssociatesWorkspace({
                     className={inpt}
                   />
                 </div>
-                <div className="grid gap-3 sm:grid-cols-2">
+                <div className="grid gap-3">
                   <div>
                     <label className="mb-1 block text-sm font-medium text-slate-700 dark:text-slate-300">
                       Mês de entrada
@@ -458,135 +458,143 @@ export function AdminAssociatesWorkspace({
 
               <div className="my-6 border-t border-slate-200 dark:border-slate-700" />
 
-              <p className={sectionTitle}>Registar pagamento</p>
-              <form
-                key={`pay-${selected.id}`}
-                action={recordPayment}
-                onSubmit={handleDrawerFormSubmit}
-                className="mt-3 space-y-3"
-              >
-                <input type="hidden" name="payUserId" value={selected.id} />
-                <div>
-                  <label className="mb-1 block text-sm font-medium text-slate-700 dark:text-slate-300">
-                    Valor (EUR)
-                  </label>
-                  <input
-                    name="payAmountEur"
-                    type="text"
-                    inputMode="decimal"
-                    required
-                    placeholder="12,50"
-                    className={inpt}
-                  />
-                </div>
-                <div>
-                  <label className="mb-1 block text-sm font-medium text-slate-700 dark:text-slate-300">
-                    Mês de referência (opcional)
-                  </label>
-                  <div className="mb-2 flex flex-wrap gap-2">
-                    <button
-                      type="button"
-                      className="rounded-lg border border-slate-200 px-2.5 py-1 text-xs font-medium text-slate-600 hover:bg-slate-50 dark:border-slate-600 dark:text-slate-300 dark:hover:bg-slate-800"
-                      onClick={() => setQuickPayMonth(currentMonthKey)}
-                    >
-                      Mês atual
-                    </button>
-                    <button
-                      type="button"
-                      className="rounded-lg border border-slate-200 px-2.5 py-1 text-xs font-medium text-slate-600 hover:bg-slate-50 dark:border-slate-600 dark:text-slate-300 dark:hover:bg-slate-800"
-                      onClick={() => {
-                        const d = new Date();
-                        d.setUTCMonth(d.getUTCMonth() - 1);
-                        setQuickPayMonth(
-                          `${d.getUTCFullYear()}-${String(d.getUTCMonth() + 1).padStart(2, "0")}`,
-                        );
-                      }}
-                    >
-                      Mês anterior
-                    </button>
-                    <button
-                      type="button"
-                      className="rounded-lg border border-slate-200 px-2.5 py-1 text-xs font-medium text-slate-600 hover:bg-slate-50 dark:border-slate-600 dark:text-slate-300 dark:hover:bg-slate-800"
-                      onClick={() => {
-                        const d = new Date();
-                        d.setUTCMonth(d.getUTCMonth() + 1);
-                        setQuickPayMonth(
-                          `${d.getUTCFullYear()}-${String(d.getUTCMonth() + 1).padStart(2, "0")}`,
-                        );
-                      }}
-                    >
-                      Próximo mês
-                    </button>
-                  </div>
-                  <MonthYearField
-                    key={`pay-month-field-${selected.id}-${quickPayMonth || "empty"}`}
-                    idPrefix={`pay-month-${selected.id}`}
-                    name="payMonthKey"
-                    allowEmpty
-                    defaultValue={quickPayMonth}
-                    className={inpt}
-                    yearStart={currentYear - 8}
-                    yearEnd={currentYear + 4}
-                  />
-                </div>
-                <div>
-                  <label className="mb-1 block text-sm font-medium text-slate-700 dark:text-slate-300">
-                    Nota (opcional)
-                  </label>
-                  <input
-                    name="payNote"
-                    type="text"
-                    placeholder="Ex.: transferência"
-                    className={inpt}
-                  />
-                </div>
-                <button type="submit" className={`${btnSecondary} w-full`}>
+              <details className="rounded-2xl border border-slate-200/80 bg-slate-50/60 p-3 dark:border-slate-700/80 dark:bg-slate-800/30">
+                <summary className="cursor-pointer text-sm font-semibold text-slate-800 dark:text-slate-100">
                   Registar pagamento
-                </button>
-              </form>
+                </summary>
+                <form
+                  key={`pay-${selected.id}`}
+                  action={recordPayment}
+                  onSubmit={handleDrawerFormSubmit}
+                  className="mt-3 space-y-3"
+                >
+                  <input type="hidden" name="payUserId" value={selected.id} />
+                  <div>
+                    <label className="mb-1 block text-sm font-medium text-slate-700 dark:text-slate-300">
+                      Valor (EUR)
+                    </label>
+                    <input
+                      name="payAmountEur"
+                      type="text"
+                      inputMode="decimal"
+                      required
+                      placeholder="12,50"
+                      className={inpt}
+                    />
+                  </div>
+                  <div>
+                    <label className="mb-1 block text-sm font-medium text-slate-700 dark:text-slate-300">
+                      Mês de referência (opcional)
+                    </label>
+                    <div className="mb-2 flex flex-wrap gap-2">
+                      <button
+                        type="button"
+                        className="rounded-lg border border-slate-200 px-2.5 py-1 text-xs font-medium text-slate-600 hover:bg-slate-50 dark:border-slate-600 dark:text-slate-300 dark:hover:bg-slate-800"
+                        onClick={() => setQuickPayMonth(currentMonthKey)}
+                      >
+                        Mês atual
+                      </button>
+                      <button
+                        type="button"
+                        className="rounded-lg border border-slate-200 px-2.5 py-1 text-xs font-medium text-slate-600 hover:bg-slate-50 dark:border-slate-600 dark:text-slate-300 dark:hover:bg-slate-800"
+                        onClick={() => {
+                          const d = new Date();
+                          d.setUTCMonth(d.getUTCMonth() - 1);
+                          setQuickPayMonth(
+                            `${d.getUTCFullYear()}-${String(d.getUTCMonth() + 1).padStart(2, "0")}`,
+                          );
+                        }}
+                      >
+                        Mês anterior
+                      </button>
+                      <button
+                        type="button"
+                        className="rounded-lg border border-slate-200 px-2.5 py-1 text-xs font-medium text-slate-600 hover:bg-slate-50 dark:border-slate-600 dark:text-slate-300 dark:hover:bg-slate-800"
+                        onClick={() => {
+                          const d = new Date();
+                          d.setUTCMonth(d.getUTCMonth() + 1);
+                          setQuickPayMonth(
+                            `${d.getUTCFullYear()}-${String(d.getUTCMonth() + 1).padStart(2, "0")}`,
+                          );
+                        }}
+                      >
+                        Próximo mês
+                      </button>
+                    </div>
+                    <MonthYearField
+                      key={`pay-month-field-${selected.id}-${quickPayMonth || "empty"}`}
+                      idPrefix={`pay-month-${selected.id}`}
+                      name="payMonthKey"
+                      allowEmpty
+                      defaultValue={quickPayMonth}
+                      className={inpt}
+                      yearStart={currentYear - 8}
+                      yearEnd={currentYear + 4}
+                      showSelectionSummary={false}
+                    />
+                  </div>
+                  <div>
+                    <label className="mb-1 block text-sm font-medium text-slate-700 dark:text-slate-300">
+                      Nota (opcional)
+                    </label>
+                    <input
+                      name="payNote"
+                      type="text"
+                      placeholder="Ex.: transferência"
+                      className={inpt}
+                    />
+                  </div>
+                  <button type="submit" className={`${btnSecondary} w-full`}>
+                    Registar pagamento
+                  </button>
+                </form>
+              </details>
 
               <div className="my-6 border-t border-slate-200 dark:border-slate-700" />
 
-              <p className={sectionTitle}>Dívida manual</p>
-              <p className="mt-1 text-xs text-slate-500 dark:text-slate-500">
-                Indica quanto ainda falta pagar (ex.: 20 €). O valor soma ao saldo em
-                dívida e aparece no extrato a vermelho — sem símbolo «+», só o montante.
-              </p>
-              <form
-                key={`debt-${selected.id}`}
-                action={recordDebtAdjustment}
-                onSubmit={handleDrawerFormSubmit}
-                className="mt-3 space-y-3"
-              >
-                <input type="hidden" name="debtUserId" value={selected.id} />
-                <div>
-                  <label className="mb-1 block text-sm font-medium text-slate-700 dark:text-slate-300">
-                    Valor em dívida (EUR)
-                  </label>
-                  <input
-                    name="debtAmountEur"
-                    type="text"
-                    inputMode="decimal"
-                    required
-                    placeholder="20,00"
-                    className={inpt}
-                  />
-                </div>
-                <div>
-                  <label className="mb-1 block text-sm font-medium text-slate-700 dark:text-slate-300">
-                    Nota (opcional)
-                  </label>
-                  <input
-                    name="debtNote"
-                    type="text"
-                    placeholder="Ex.: dívida anterior ao sistema"
-                    className={inpt}
-                  />
-                </div>
-                <button type="submit" className={`${btnSecondary} w-full`}>
-                  Adicionar à dívida
-                </button>
-              </form>
+              <details className="rounded-2xl border border-slate-200/80 bg-slate-50/60 p-3 dark:border-slate-700/80 dark:bg-slate-800/30">
+                <summary className="cursor-pointer text-sm font-semibold text-slate-800 dark:text-slate-100">
+                  Dívida manual
+                </summary>
+                <p className="mt-1 text-xs text-slate-500 dark:text-slate-500">
+                  Adiciona dívida extra no saldo (ex.: 20 €).
+                </p>
+                <form
+                  key={`debt-${selected.id}`}
+                  action={recordDebtAdjustment}
+                  onSubmit={handleDrawerFormSubmit}
+                  className="mt-3 space-y-3"
+                >
+                  <input type="hidden" name="debtUserId" value={selected.id} />
+                  <div>
+                    <label className="mb-1 block text-sm font-medium text-slate-700 dark:text-slate-300">
+                      Valor em dívida (EUR)
+                    </label>
+                    <input
+                      name="debtAmountEur"
+                      type="text"
+                      inputMode="decimal"
+                      required
+                      placeholder="20,00"
+                      className={inpt}
+                    />
+                  </div>
+                  <div>
+                    <label className="mb-1 block text-sm font-medium text-slate-700 dark:text-slate-300">
+                      Nota (opcional)
+                    </label>
+                    <input
+                      name="debtNote"
+                      type="text"
+                      placeholder="Ex.: dívida anterior ao sistema"
+                      className={inpt}
+                    />
+                  </div>
+                  <button type="submit" className={`${btnSecondary} w-full`}>
+                    Adicionar à dívida
+                  </button>
+                </form>
+              </details>
 
               <div className="my-6 border-t border-slate-200 dark:border-slate-700" />
 
