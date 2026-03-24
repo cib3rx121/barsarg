@@ -125,7 +125,7 @@ export default async function ConviviosAdminPage({ searchParams }: ConviviosPage
         <section className="mt-6 space-y-4">
           {saveCostsError ? (
             <p className="rounded-lg border border-red-200 bg-red-50 px-3 py-2 text-sm text-red-800 dark:border-red-900/50 dark:bg-red-950/35 dark:text-red-200">
-              Não foi possível guardar custos. Confirma os valores em EUR.
+              Não foi possível guardar custos/comprovativo. Confirma valores, ficheiro (imagem/PDF até 10MB) e token `BLOB_READ_WRITE_TOKEN`.
             </p>
           ) : null}
           {closeError ? (
@@ -150,7 +150,7 @@ export default async function ConviviosAdminPage({ searchParams }: ConviviosPage
           ) : null}
           {settlementError ? (
             <p className="rounded-lg border border-red-200 bg-red-50 px-3 py-2 text-sm text-red-800 dark:border-red-900/50 dark:bg-red-950/35 dark:text-red-200">
-              Liquidação indisponível. Verifica se há inscritos e se ainda não foi liquidado.
+              Não foi possível fechar contas. Verifica se há custos > 0, inscritos com “Sim” e se ainda não foi fechado.
             </p>
           ) : null}
           {events.length === 0 ? (
@@ -304,7 +304,7 @@ export default async function ConviviosAdminPage({ searchParams }: ConviviosPage
                       <form action={applyEventSettlement}>
                         <input type="hidden" name="eventId" value={event.id} />
                         <button type="submit" className={`${btnPrimary} w-full`}>
-                          Liquidar e lançar no saldo
+                          Fechar contas do convívio
                         </button>
                       </form>
                     </div>
@@ -430,7 +430,7 @@ export default async function ConviviosAdminPage({ searchParams }: ConviviosPage
                     <form action={applyEventSettlement}>
                       <input type="hidden" name="eventId" value={event.id} />
                       <button type="submit" className={`${btnPrimary} w-full sm:col-span-2`}>
-                        Liquidar e lançar no saldo
+                        Fechar contas do convívio
                       </button>
                     </form>
                   </div>

@@ -246,9 +246,25 @@ function parseAmountEurToCents(raw: string): number | null {
 function isManagedBlobUrl(url: string): boolean {
   try {
     const parsed = new URL(url);
-    return parsed.hostname.endsWith(".public.blob.vercel-storage.com");
+    return parsed.hostname.endsWith(".blob.vercel-storage.com");
   } catch {
     return false;
+  }
+}
+
+async function uploadInvoiceToBlob(pathname: string, file: File): Promise<string> {
+  try {
+    const blob = await put(pathname, file, {
+      access: "public",
+      addRandomSuffix: true,
+    });
+    return blob.url;
+  } catch {
+    // Compatibilidade com stores privadas: tenta sem forçar "public".
+    const blob = await put(pathname, file, {
+      addRandomSuffix: true,
+    });
+    return blob.url;
   }
 }
 
@@ -747,11 +763,11 @@ export async function saveEventCosts(formData: FormData) {
     const extFromType = isPdf ? "pdf" : "img";
     const safeName = invoiceFile.name.replace(/[^a-zA-Z0-9._-]/g, "_");
     const pathname = `convidios/${eventId}/${Date.now()}-${safeName || `fatura.${extFromType}`}`;
-    const blob = await put(pathname, invoiceFile, {
-      access: "public",
-      addRandomSuffix: true,
-    });
-    uploadedInvoiceUrl = blob.url;
+    try {
+      uploadedInvoiceUrl = await uploadInvoiceToBlob(pathname, invoiceFile);
+    } catch {
+      redirect("/admin/convivios?error=2");
+    }
   }
 
   const invoiceUrl = clearInvoice
@@ -932,6 +948,10 @@ export async function applyEventSettlement(formData: FormData) {
     drinkCents: event.drinkCents,
     otherCents: event.otherCents,
   });
+  const totalCostsCents = event.foodCents + event.drinkCents + event.otherCents;
+  if (totalCostsCents <= 0) {
+    redirect("/admin/convivios?error=4");
+  }
   const userIds = [...split.keys()];
   if (userIds.length === 0) {
     redirect("/admin/convivios?error=4");
