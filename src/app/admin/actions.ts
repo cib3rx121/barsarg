@@ -278,29 +278,42 @@ export async function recordDebtAdjustment(formData: FormData) {
   await assertAdmin();
 
   const userId = String(formData.get("debtUserId") ?? "").trim();
-  const amountCents = parseAmountEurToCents(
+  const targetDebtCents = parseAmountEurToCents(
     String(formData.get("debtAmountEur") ?? ""),
   );
   const noteRaw = String(formData.get("debtNote") ?? "").trim();
 
-  if (!userId || amountCents === null || amountCents <= 0) {
+  if (!userId || targetDebtCents === null) {
     redirect("/admin?error=10");
   }
 
-  await prisma.ledgerEntry.create({
-    data: {
-      userId,
-      deltaCents: amountCents,
-      kind: "ADJUSTMENT",
-      monthKey: null,
-      note: noteRaw ? noteRaw : "Dívida manual",
-    },
+  const user = await prisma.user.findUnique({
+    where: { id: userId },
+    select: { id: true },
   });
+  if (!user) {
+    redirect("/admin?error=10");
+  }
+
+  const currentBalance = (await computeBalancesForUsers([user])).get(userId)?.balanceCents ?? 0;
+  const deltaCents = targetDebtCents - currentBalance;
+
+  if (deltaCents !== 0) {
+    await prisma.ledgerEntry.create({
+      data: {
+        userId,
+        deltaCents,
+        kind: "ADJUSTMENT",
+        monthKey: null,
+        note: noteRaw ? noteRaw : "Ajuste para dívida total",
+      },
+    });
+  }
   await logAdminEvent({
-    action: "CREATE",
-    entity: "LEDGER_ADJUSTMENT",
+    action: "UPDATE",
+    entity: "LEDGER_DEBT_TOTAL",
     entityId: userId,
-    note: `Dívida manual: ${(amountCents / 100).toFixed(2)} EUR`,
+    note: `Dívida total definida para ${(targetDebtCents / 100).toFixed(2)} EUR`,
   });
 
   revalidatePath("/admin");

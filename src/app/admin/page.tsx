@@ -866,7 +866,7 @@ export default async function AdminPage({ searchParams }: AdminPageProps) {
           ) : null}
           {hasDebtFormError ? (
             <p className="mt-4 rounded-lg border border-red-200 bg-red-50 px-3 py-2 text-sm text-red-800 dark:border-red-900/50 dark:bg-red-950/35 dark:text-red-200">
-              Indique um valor em euros positivo para a dívida manual (ex.: 20,00).
+              Indique um valor válido em euros para a dívida total (ex.: 120,00).
             </p>
           ) : null}
 

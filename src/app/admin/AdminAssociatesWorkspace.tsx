@@ -659,10 +659,10 @@ export function AdminAssociatesWorkspace({
 
               <details className="rounded-2xl border border-slate-200/80 bg-slate-50/60 p-3 dark:border-slate-700/80 dark:bg-slate-800/30">
                 <summary className="cursor-pointer text-sm font-semibold text-slate-800 dark:text-slate-100">
-                  Dívida manual
+                  Definir dívida total
                 </summary>
                 <p className="mt-1 text-xs text-slate-500 dark:text-slate-500">
-                  Adiciona dívida extra no saldo (ex.: 20 €).
+                  Define o valor total de dívida atual do associado (substitui o valor atual).
                 </p>
                 <div className="mt-2 flex flex-wrap gap-2">
                   {["10,00", "20,00", "30,00", "50,00"].map((v) => (
@@ -692,14 +692,14 @@ export function AdminAssociatesWorkspace({
                   <input type="hidden" name="debtUserId" value={selected.id} />
                   <div>
                     <label className="mb-1 block text-sm font-medium text-slate-700 dark:text-slate-300">
-                      Valor em dívida (EUR)
+                      Dívida total atual (EUR)
                     </label>
                     <input
                       name="debtAmountEur"
                       type="text"
                       inputMode="decimal"
                       required
-                      placeholder="20,00"
+                      placeholder="Ex.: 120,00"
                       className={inpt}
                     />
                   </div>
@@ -715,7 +715,7 @@ export function AdminAssociatesWorkspace({
                     />
                   </div>
                   <SubmitButton className={`${btnSecondary} w-full`} pendingLabel="A guardar...">
-                    Adicionar à dívida
+                    Guardar dívida total
                   </SubmitButton>
                 </form>
               </details>
