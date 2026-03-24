@@ -83,6 +83,12 @@ export function AdminAssociatesWorkspace({
     setQuickPayMonth("");
   }
 
+  function handleDrawerFormSubmit() {
+    // Fecha imediatamente o drawer para evitar body lock (overflow hidden)
+    // enquanto a server action navega/revalida a página.
+    closeMember();
+  }
+
   const filteredMembers = useMemo(() => {
     const q = query.trim().toLowerCase();
     return members.filter((m) => {
@@ -394,6 +400,7 @@ export function AdminAssociatesWorkspace({
               <form
                 key={`edit-${selected.id}`}
                 action={updateMember}
+                onSubmit={handleDrawerFormSubmit}
                 className="mt-3 space-y-3"
               >
                 <input type="hidden" name="userId" value={selected.id} />
@@ -451,6 +458,7 @@ export function AdminAssociatesWorkspace({
               <form
                 key={`pay-${selected.id}`}
                 action={recordPayment}
+                onSubmit={handleDrawerFormSubmit}
                 className="mt-3 space-y-3"
               >
                 <input type="hidden" name="payUserId" value={selected.id} />
@@ -543,6 +551,7 @@ export function AdminAssociatesWorkspace({
               <form
                 key={`debt-${selected.id}`}
                 action={recordDebtAdjustment}
+                onSubmit={handleDrawerFormSubmit}
                 className="mt-3 space-y-3"
               >
                 <input type="hidden" name="debtUserId" value={selected.id} />
@@ -584,6 +593,7 @@ export function AdminAssociatesWorkspace({
               <form
                 key={`waive-${selected.id}`}
                 action={waiveMonthRange}
+                onSubmit={handleDrawerFormSubmit}
                 className="mt-3 space-y-3"
               >
                 <input type="hidden" name="waiveUserId" value={selected.id} />
@@ -638,6 +648,7 @@ export function AdminAssociatesWorkspace({
                 <form
                   key={`del-${selected.id}`}
                   action={deleteMember}
+                  onSubmit={handleDrawerFormSubmit}
                   className="mt-3 space-y-3"
                 >
                   <input type="hidden" name="userId" value={selected.id} />
