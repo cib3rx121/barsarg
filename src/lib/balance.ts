@@ -196,7 +196,7 @@ export function ledgerKindLabel(kind: string): string {
     case "PAYMENT":
       return "Pagamento";
     case "ADJUSTMENT":
-      return "Ajuste";
+      return "Dívida manual";
     default:
       return kind;
   }

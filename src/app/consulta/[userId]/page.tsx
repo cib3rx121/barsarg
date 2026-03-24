@@ -1,5 +1,6 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
+import { balanceToneClass } from "@/lib/balance-display";
 import {
   backfillMissingMonthlyCharges,
   computeBalanceDetailForUser,
@@ -65,7 +66,15 @@ export default async function ConsultaUserDetailPage({ params }: PageProps) {
           Só leitura.
         </p>
 
-        <div className="mt-6 rounded-2xl border border-slate-200/80 bg-slate-50/80 p-5 dark:border-slate-700 dark:bg-slate-800/40">
+        <div
+          className={`mt-6 rounded-2xl border p-5 dark:border-slate-700 ${
+            b > 0
+              ? "border-red-200/90 bg-red-50/90 dark:border-red-900/50 dark:bg-red-950/25"
+              : b < 0
+                ? "border-emerald-200/90 bg-emerald-50/80 dark:border-emerald-900/40 dark:bg-emerald-950/20"
+                : "border-slate-200/80 bg-slate-50/80 dark:bg-slate-800/40"
+          }`}
+        >
           <p className="text-sm text-slate-600 dark:text-slate-400">
             {b > 0
               ? "Dívida em falta"
@@ -73,12 +82,8 @@ export default async function ConsultaUserDetailPage({ params }: PageProps) {
                 ? "Crédito a favor"
                 : "Saldo"}
           </p>
-          <p className="mt-1 text-2xl font-semibold tabular-nums text-slate-900 dark:text-white">
-            {b > 0
-              ? eurFmt.format(b / 100)
-              : b < 0
-                ? eurFmt.format((-b) / 100)
-                : eurFmt.format(0)}
+          <p className={`mt-1 text-2xl tabular-nums ${balanceToneClass(b)}`}>
+            {b !== 0 ? eurFmt.format(Math.abs(b) / 100) : eurFmt.format(0)}
           </p>
           {!quotaNotConfigured && b > 0 ? (
             <p className="mt-2 text-sm text-slate-600 dark:text-slate-400">
@@ -112,13 +117,23 @@ export default async function ConsultaUserDetailPage({ params }: PageProps) {
                     <p className="text-xs tabular-nums text-slate-500 dark:text-slate-400">
                       {dateTimeFmt.format(row.createdAt)}
                     </p>
-                    <p className="shrink-0 tabular-nums font-semibold text-slate-900 dark:text-white">
-                      {row.deltaCents > 0 ? "+" : ""}
-                      {eurFmt.format(row.deltaCents / 100)}
+                    <p
+                      className={`shrink-0 text-sm ${balanceToneClass(row.deltaCents)}`}
+                    >
+                      {eurFmt.format(Math.abs(row.deltaCents) / 100)}
                     </p>
                   </div>
                   <p className="mt-2 font-medium text-slate-800 dark:text-slate-200">
                     {ledgerKindLabel(row.kind)}
+                    {row.deltaCents > 0 ? (
+                      <span className="ml-1.5 text-xs font-normal text-red-600 dark:text-red-400">
+                        (aumenta dívida)
+                      </span>
+                    ) : row.deltaCents < 0 ? (
+                      <span className="ml-1.5 text-xs font-normal text-emerald-600 dark:text-emerald-400">
+                        (reduz dívida)
+                      </span>
+                    ) : null}
                   </p>
                   <p className="mt-1 font-mono text-xs tabular-nums text-slate-600 dark:text-slate-400">
                     Mês: {row.monthKey ?? "—"}
@@ -137,7 +152,7 @@ export default async function ConsultaUserDetailPage({ params }: PageProps) {
                     <th className="px-4 py-3 font-semibold">Data</th>
                     <th className="px-4 py-3 font-semibold">Tipo</th>
                     <th className="px-4 py-3 font-semibold">Mês</th>
-                    <th className="px-4 py-3 font-semibold">Valor</th>
+                    <th className="px-4 py-3 font-semibold">Valor (€)</th>
                     <th className="px-4 py-3 font-semibold">Nota</th>
                   </tr>
                 </thead>
@@ -154,9 +169,10 @@ export default async function ConsultaUserDetailPage({ params }: PageProps) {
                       <td className="px-4 py-3 font-mono tabular-nums">
                         {row.monthKey ?? "—"}
                       </td>
-                      <td className="px-4 py-3 tabular-nums">
-                        {row.deltaCents > 0 ? "+" : ""}
-                        {eurFmt.format(row.deltaCents / 100)}
+                      <td
+                        className={`px-4 py-3 tabular-nums ${balanceToneClass(row.deltaCents)}`}
+                      >
+                        {eurFmt.format(Math.abs(row.deltaCents) / 100)}
                       </td>
                       <td className="max-w-[140px] truncate px-4 py-3 text-slate-600 dark:text-slate-400">
                         {row.note ?? "—"}

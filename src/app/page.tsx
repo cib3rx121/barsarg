@@ -18,8 +18,8 @@ export default function Home() {
         <main className={`${card} text-center`}>
           {hasBrandLogo() ? (
             <div className="mb-8 flex justify-center">
-              <span className="flex h-40 w-40 items-center justify-center overflow-hidden rounded-2xl border border-slate-200/80 bg-white/90 shadow-md dark:border-slate-600 dark:bg-slate-950/40 sm:h-44 sm:w-44">
-                <BrandLogo size={152} priority className="p-2.5 sm:p-3" />
+              <span className="flex h-52 w-52 items-center justify-center overflow-hidden rounded-2xl border border-slate-200/80 bg-white/90 shadow-md dark:border-slate-600 dark:bg-slate-950/40 sm:h-56 sm:w-56">
+                <BrandLogo size={200} priority className="p-3 sm:p-3.5" />
               </span>
             </div>
           ) : null}

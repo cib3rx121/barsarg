@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import { balanceToneClass } from "@/lib/balance-display";
 import {
   createUser,
   deleteMember,
@@ -163,16 +164,10 @@ export function AdminAssociatesWorkspace({
                         </p>
                       </div>
                       <div className="shrink-0 text-right">
-                        <p className="tabular-nums text-sm font-semibold text-slate-900 dark:text-white">
-                          {b > 0 ? (
-                            eurFmt.format(b / 100)
-                          ) : b < 0 ? (
-                            <span className="text-emerald-700 dark:text-emerald-400">
-                              {eurFmt.format((-b) / 100)}
-                            </span>
-                          ) : (
-                            eurFmt.format(0)
-                          )}
+                        <p className={`text-sm ${balanceToneClass(b)}`}>
+                          {b !== 0
+                            ? eurFmt.format(Math.abs(b) / 100)
+                            : eurFmt.format(0)}
                         </p>
                         <p className="mt-0.5 text-xs text-slate-500 dark:text-slate-400">
                           {!m.quotaNotConfigured
@@ -230,16 +225,12 @@ export function AdminAssociatesWorkspace({
                       <td className="px-4 py-3.5 text-slate-600 dark:text-slate-400">
                         {m.chargeMonthLabel}
                       </td>
-                      <td className="px-4 py-3.5 tabular-nums font-medium">
-                        {b > 0 ? (
-                          eurFmt.format(b / 100)
-                        ) : b < 0 ? (
-                          <span className="text-emerald-700 dark:text-emerald-400">
-                            {eurFmt.format((-b) / 100)}
-                          </span>
-                        ) : (
-                          eurFmt.format(0)
-                        )}
+                      <td
+                        className={`px-4 py-3.5 tabular-nums ${balanceToneClass(b)}`}
+                      >
+                        {b !== 0
+                          ? eurFmt.format(Math.abs(b) / 100)
+                          : eurFmt.format(0)}
                       </td>
                       <td className="px-4 py-3.5 tabular-nums text-slate-600 dark:text-slate-400">
                         {!m.quotaNotConfigured ? m.estimatedMonths : "—"}
@@ -276,14 +267,32 @@ export function AdminAssociatesWorkspace({
                   {selected.name}
                 </h2>
                 <p className="mt-1 text-sm text-slate-600 dark:text-slate-400">
-                  Saldo:{" "}
-                  <span className="font-semibold tabular-nums text-slate-900 dark:text-white">
-                    {selected.balanceCents > 0
-                      ? eurFmt.format(selected.balanceCents / 100)
-                      : selected.balanceCents < 0
-                        ? `Crédito ${eurFmt.format((-selected.balanceCents) / 100)}`
-                        : eurFmt.format(0)}
-                  </span>
+                  {selected.balanceCents > 0 ? (
+                    <>
+                      Deve{" "}
+                      <span
+                        className={`tabular-nums ${balanceToneClass(selected.balanceCents)}`}
+                      >
+                        {eurFmt.format(selected.balanceCents / 100)}
+                      </span>
+                    </>
+                  ) : selected.balanceCents < 0 ? (
+                    <>
+                      Crédito{" "}
+                      <span
+                        className={`tabular-nums ${balanceToneClass(selected.balanceCents)}`}
+                      >
+                        {eurFmt.format((-selected.balanceCents) / 100)}
+                      </span>
+                    </>
+                  ) : (
+                    <>
+                      Saldo{" "}
+                      <span className={balanceToneClass(0)}>
+                        {eurFmt.format(0)}
+                      </span>
+                    </>
+                  )}
                 </p>
                 <p className="text-xs text-slate-500 dark:text-slate-500">
                   Registo (mês): {selected.createdMonthLabel}
@@ -408,7 +417,8 @@ export function AdminAssociatesWorkspace({
 
               <p className={sectionTitle}>Dívida manual</p>
               <p className="mt-1 text-xs text-slate-500 dark:text-slate-500">
-                Aumenta o que o associado deve (ex.: 20 € em dívida), sem calcular meses.
+                Indica quanto ainda falta pagar (ex.: 20 €). O valor soma ao saldo em
+                dívida e aparece no extrato a vermelho — sem símbolo «+», só o montante.
               </p>
               <form
                 key={`debt-${selected.id}`}

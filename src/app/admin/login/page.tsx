@@ -50,8 +50,8 @@ export default async function AdminLoginPage({ searchParams }: LoginPageProps) {
       <main className="admin-shell relative w-full max-w-md rounded-2xl border border-slate-200/80 bg-white/90 p-6 shadow-2xl shadow-slate-300/40 backdrop-blur-xl sm:rounded-3xl sm:p-8 dark:border-slate-700/80 dark:bg-slate-900/90 dark:shadow-black/50">
         {hasBrandLogo() ? (
           <div className="mb-8 flex justify-center">
-            <span className="flex h-40 w-40 items-center justify-center overflow-hidden rounded-2xl border border-slate-200/80 bg-white/90 shadow-md dark:border-slate-600 dark:bg-slate-950/40 sm:h-44 sm:w-44">
-              <BrandLogo size={152} priority className="p-2.5 sm:p-3" />
+            <span className="flex h-52 w-52 items-center justify-center overflow-hidden rounded-2xl border border-slate-200/80 bg-white/90 shadow-md dark:border-slate-600 dark:bg-slate-950/40 sm:h-56 sm:w-56">
+              <BrandLogo size={200} priority className="p-3 sm:p-3.5" />
             </span>
           </div>
         ) : null}

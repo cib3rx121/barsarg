@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { cookies } from "next/headers";
 import { redirect } from "next/navigation";
+import { balanceToneClass } from "@/lib/balance-display";
 import {
   backfillMissingMonthlyCharges,
   computeBalancesForUsers,
@@ -191,16 +192,12 @@ export default async function ConsultaPage({ searchParams }: ConsultaPageProps) 
                           </p>
                         </div>
                         <div className="shrink-0 text-right">
-                          <p className="tabular-nums text-sm font-semibold text-slate-900 dark:text-white">
-                            {b > 0 ? (
-                              eurFmt.format(b / 100)
-                            ) : b < 0 ? (
-                              <span className="text-emerald-700 dark:text-emerald-400">
-                                {eurFmt.format((-b) / 100)}
-                              </span>
-                            ) : (
-                              eurFmt.format(0)
-                            )}
+                          <p
+                            className={`text-sm ${balanceToneClass(b)}`}
+                          >
+                            {b !== 0
+                              ? eurFmt.format(Math.abs(b) / 100)
+                              : eurFmt.format(0)}
                           </p>
                           <p className="mt-0.5 text-xs text-slate-500 dark:text-slate-400">
                             {d && !d.quotaNotConfigured
@@ -257,16 +254,12 @@ export default async function ConsultaPage({ searchParams }: ConsultaPageProps) 
                         <td className="px-4 py-3 tabular-nums text-slate-600 dark:text-slate-400">
                           {entryMonthLabel(u.entryDate)}
                         </td>
-                        <td className="px-4 py-3 tabular-nums font-medium">
-                          {b > 0 ? (
-                            eurFmt.format(b / 100)
-                          ) : b < 0 ? (
-                            <span className="text-emerald-700 dark:text-emerald-400">
-                              Crédito {eurFmt.format((-b) / 100)}
-                            </span>
-                          ) : (
-                            eurFmt.format(0)
-                          )}
+                        <td
+                          className={`px-4 py-3 tabular-nums ${balanceToneClass(b)}`}
+                        >
+                          {b !== 0
+                            ? eurFmt.format(Math.abs(b) / 100)
+                            : eurFmt.format(0)}
                         </td>
                         <td className="px-4 py-3 text-slate-600 dark:text-slate-400">
                           <span className="tabular-nums">
