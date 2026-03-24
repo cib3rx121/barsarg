@@ -214,7 +214,7 @@ export default async function ConviviosAdminPage({ searchParams }: ConviviosPage
                     <p className="mt-1 text-xs text-slate-500 dark:text-slate-400">
                       Expande para editar custos, inscrições e liquidação.
                     </p>
-                    <form action={saveEventCosts} className="mt-3 grid gap-3">
+                    <form action={saveEventCosts} encType="multipart/form-data" className="mt-3 grid gap-3">
                       <input type="hidden" name="eventId" value={event.id} />
                       <div className="rounded-xl border border-emerald-200/80 bg-emerald-50/70 p-3 text-xs text-emerald-900 dark:border-emerald-900/40 dark:bg-emerald-950/30 dark:text-emerald-100">
                         <p className="font-semibold">Modo rápido (recomendado): Total único</p>
@@ -224,6 +224,33 @@ export default async function ConviviosAdminPage({ searchParams }: ConviviosPage
                         className={inpt}
                         placeholder="Total único € (ex.: 85,00)"
                       />
+                      <div>
+                        <label className="mb-1 block text-xs font-semibold uppercase tracking-wide text-slate-500 dark:text-slate-400">
+                          Upload comprovativo (imagem/PDF)
+                        </label>
+                        <input
+                          name="invoiceFile"
+                          type="file"
+                          accept="image/*,application/pdf"
+                          className={inpt}
+                        />
+                      </div>
+                      <div>
+                        <label className="mb-1 block text-xs font-semibold uppercase tracking-wide text-slate-500 dark:text-slate-400">
+                          URL comprovativo (opcional)
+                        </label>
+                        <input
+                          name="invoiceUrl"
+                          type="url"
+                          defaultValue={event.invoiceUrl ?? ""}
+                          className={inpt}
+                          placeholder="https://... (fatura)"
+                        />
+                        <label className="mt-2 inline-flex items-center gap-2 text-xs text-slate-600 dark:text-slate-300">
+                          <input type="checkbox" name="clearInvoice" className="h-4 w-4" />
+                          Remover comprovativo atual
+                        </label>
+                      </div>
                       <div>
                         <label className="mb-1 block text-xs font-semibold uppercase tracking-wide text-slate-500 dark:text-slate-400">
                           Comida (€)
@@ -284,7 +311,7 @@ export default async function ConviviosAdminPage({ searchParams }: ConviviosPage
                   </details>
 
                   <div className="hidden md:block">
-                  <form action={saveEventCosts} className="mt-4 grid gap-3 sm:grid-cols-4">
+                  <form action={saveEventCosts} encType="multipart/form-data" className="mt-4 grid gap-3 sm:grid-cols-4">
                     <input type="hidden" name="eventId" value={event.id} />
                     <div className="sm:col-span-4 rounded-xl border border-emerald-200/80 bg-emerald-50/70 p-3 text-xs text-emerald-900 dark:border-emerald-900/40 dark:bg-emerald-950/30 dark:text-emerald-100">
                       <p className="font-semibold">Modo rápido (recomendado): Total único</p>
@@ -300,6 +327,35 @@ export default async function ConviviosAdminPage({ searchParams }: ConviviosPage
                     />
                     <div className="sm:col-span-2 flex items-center text-xs text-slate-500 dark:text-slate-400">
                       Use os campos abaixo só quando quiser separar por categoria.
+                    </div>
+                    <div>
+                      <label className="mb-1 block text-xs font-semibold uppercase tracking-wide text-slate-500 dark:text-slate-400">
+                        Upload comprovativo (imagem/PDF)
+                      </label>
+                      <input
+                        name="invoiceFile"
+                        type="file"
+                        accept="image/*,application/pdf"
+                        className={inpt}
+                        aria-label="Ficheiro de comprovativo"
+                      />
+                    </div>
+                    <div>
+                      <label className="mb-1 block text-xs font-semibold uppercase tracking-wide text-slate-500 dark:text-slate-400">
+                        URL comprovativo (opcional)
+                      </label>
+                      <input
+                        name="invoiceUrl"
+                        type="url"
+                        defaultValue={event.invoiceUrl ?? ""}
+                        className={inpt}
+                        placeholder="https://... (fatura)"
+                        aria-label="URL do comprovativo"
+                      />
+                      <label className="mt-2 inline-flex items-center gap-2 text-xs text-slate-600 dark:text-slate-300">
+                        <input type="checkbox" name="clearInvoice" className="h-4 w-4" />
+                        Remover comprovativo atual
+                      </label>
                     </div>
                     <div>
                       <label className="mb-1 block text-xs font-semibold uppercase tracking-wide text-slate-500 dark:text-slate-400">
@@ -345,6 +401,16 @@ export default async function ConviviosAdminPage({ searchParams }: ConviviosPage
                       Use <span className="font-semibold">Comida/Bebida/Outros</span> apenas quando quiser
                       separar custos.
                     </p>
+                    {event.invoiceUrl ? (
+                      <a
+                        href={event.invoiceUrl}
+                        target="_blank"
+                        rel="noreferrer"
+                        className="sm:col-span-4 text-xs font-semibold text-emerald-700 underline underline-offset-2 hover:text-emerald-600 dark:text-emerald-300 dark:hover:text-emerald-200"
+                      >
+                        Ver comprovativo atual
+                      </a>
+                    ) : null}
                   </form>
                   </div>
 

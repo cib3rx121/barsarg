@@ -8,7 +8,7 @@ import {
 } from "@/lib/balance";
 import { PublicShell } from "@/components/PublicShell";
 import { requireConsultaSession } from "@/lib/auth-consulta";
-import { splitProfileLabel } from "@/lib/events";
+import { computeEventSplit, splitProfileLabel } from "@/lib/events";
 import { prisma } from "@/lib/prisma";
 import { updateEventParticipation } from "@/app/consulta/actions";
 
@@ -72,10 +72,17 @@ export default async function ConsultaUserDetailPage({ params }: PageProps) {
   const openEvents = await prisma.event.findMany({
     where: { status: "OPEN" },
     orderBy: [{ eventDate: "asc" }, { createdAt: "desc" }],
-    include: {
+    select: {
+      id: true,
+      title: true,
+      description: true,
+      eventDate: true,
+      invoiceUrl: true,
+      foodCents: true,
+      drinkCents: true,
+      otherCents: true,
       participants: {
-        where: { userId },
-        select: { status: true, splitProfile: true },
+        select: { userId: true, status: true, splitProfile: true },
       },
     },
     take: 10,
@@ -137,9 +144,21 @@ export default async function ConsultaUserDetailPage({ params }: PageProps) {
             </p>
             <div className="mt-3 space-y-3">
               {openEvents.map((ev) => {
-                const current = ev.participants[0];
+                const current = ev.participants.find((participant) => participant.userId === userId);
                 const currentStatus = current?.status ?? "NO";
                 const currentProfile = current?.splitProfile ?? "ALL";
+                const yesCount = ev.participants.filter(
+                  (participant) => participant.status === "YES",
+                ).length;
+                const totalCents = ev.foodCents + ev.drinkCents + ev.otherCents;
+                const avgCents = yesCount > 0 ? Math.round(totalCents / yesCount) : 0;
+                const splitMap = computeEventSplit({
+                  participants: ev.participants,
+                  foodCents: ev.foodCents,
+                  drinkCents: ev.drinkCents,
+                  otherCents: ev.otherCents,
+                });
+                const myEstimateCents = splitMap.get(userId) ?? 0;
                 return (
                   <form
                     key={ev.id}
@@ -157,6 +176,39 @@ export default async function ConsultaUserDetailPage({ params }: PageProps) {
                     {ev.description ? (
                       <p className="mt-1 text-xs text-slate-600 dark:text-slate-400">{ev.description}</p>
                     ) : null}
+                    <div className="mt-2 rounded-lg border border-slate-200/80 bg-slate-50/80 px-3 py-2 text-xs text-slate-600 dark:border-slate-700/80 dark:bg-slate-800/40 dark:text-slate-300">
+                      <p>
+                        Inscritos: {yesCount} · Total: {eurFmt.format(totalCents / 100)}
+                      </p>
+                      <p>
+                        Comida: {eurFmt.format(ev.foodCents / 100)} · Bebida:{" "}
+                        {eurFmt.format(ev.drinkCents / 100)} · Outros:{" "}
+                        {eurFmt.format(ev.otherCents / 100)}
+                      </p>
+                      <p>
+                        Estimativa por inscrito:{" "}
+                        {yesCount > 0 ? eurFmt.format(avgCents / 100) : "—"}
+                      </p>
+                      <p>
+                        A tua estimativa atual:{" "}
+                        {currentStatus === "YES"
+                          ? eurFmt.format(myEstimateCents / 100)
+                          : "—"}
+                      </p>
+                      {ev.invoiceUrl ? (
+                        <p>
+                          Comprovativo:{" "}
+                          <a
+                            href={ev.invoiceUrl}
+                            target="_blank"
+                            rel="noreferrer"
+                            className="font-semibold underline underline-offset-2"
+                          >
+                            ver fatura
+                          </a>
+                        </p>
+                      ) : null}
+                    </div>
                     <div className="mt-3 grid gap-2 sm:grid-cols-3">
                       <select name="status" defaultValue={currentStatus} className="rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm dark:border-slate-600 dark:bg-slate-950/40">
                         <option value="YES">Vou participar</option>

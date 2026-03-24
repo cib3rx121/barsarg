@@ -137,7 +137,18 @@ export default async function ConsultaPage({ searchParams }: ConsultaPageProps) 
   const openEvents = await prisma.event.findMany({
     where: { status: "OPEN" },
     orderBy: [{ eventDate: "asc" }, { createdAt: "desc" }],
-    select: { id: true, title: true, eventDate: true },
+    select: {
+      id: true,
+      title: true,
+      eventDate: true,
+      invoiceUrl: true,
+      foodCents: true,
+      drinkCents: true,
+      otherCents: true,
+      participants: {
+        select: { status: true },
+      },
+    },
     take: 3,
   });
 
@@ -186,12 +197,46 @@ export default async function ConsultaPage({ searchParams }: ConsultaPageProps) 
               Já podes entrar no teu detalhe e marcar participação.
             </p>
             <ul className="mt-2 list-disc space-y-1 pl-5 text-xs">
-              {openEvents.map((ev) => (
-                <li key={ev.id}>
-                  {ev.title}
-                  {ev.eventDate ? ` (${dateFmt.format(ev.eventDate)})` : ""}
-                </li>
-              ))}
+              {openEvents.map((ev) => {
+                const yesCount = ev.participants.filter(
+                  (participant) => participant.status === "YES",
+                ).length;
+                const totalCents = ev.foodCents + ev.drinkCents + ev.otherCents;
+                const avgCents = yesCount > 0 ? Math.round(totalCents / yesCount) : 0;
+                return (
+                  <li key={ev.id}>
+                    <p className="font-semibold">
+                      {ev.title}
+                      {ev.eventDate ? ` (${dateFmt.format(ev.eventDate)})` : ""}
+                    </p>
+                    <p>
+                      Inscritos: {yesCount} · Total: {eurFmt.format(totalCents / 100)}
+                    </p>
+                    <p>
+                      Comida: {eurFmt.format(ev.foodCents / 100)} · Bebida:{" "}
+                      {eurFmt.format(ev.drinkCents / 100)} · Outros:{" "}
+                      {eurFmt.format(ev.otherCents / 100)}
+                    </p>
+                    <p>
+                      Estimativa por inscrito:{" "}
+                      {yesCount > 0 ? eurFmt.format(avgCents / 100) : "—"}
+                    </p>
+                    {ev.invoiceUrl ? (
+                      <p>
+                        Comprovativo:{" "}
+                        <a
+                          href={ev.invoiceUrl}
+                          target="_blank"
+                          rel="noreferrer"
+                          className="font-semibold underline underline-offset-2"
+                        >
+                          ver fatura
+                        </a>
+                      </p>
+                    ) : null}
+                  </li>
+                );
+              })}
             </ul>
           </div>
         ) : null}

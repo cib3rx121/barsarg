@@ -96,6 +96,7 @@ model Event {
   title       String
   description String?
   eventDate   DateTime?
+  invoiceUrl  String?
   status      String             @default("OPEN")
   foodCents   Int                @default(0)
   drinkCents  Int                @default(0)

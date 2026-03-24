@@ -27,6 +27,7 @@ Plataforma web para gerir cotas mensais de um bar, com foco em controlo de divid
   - perfis simplificados: `Tudo` ou `So comida`
   - liquidacao para saldo do associado
   - ordenacao por data do evento (mais proximo primeiro)
+  - comprovativo de custos por upload direto (imagem/PDF) ou URL opcional
 
 ## Regras de negocio
 - Divida e mensal desde o mes de entrada (inclui o mes de entrada, mesmo a meio do mes).
@@ -59,6 +60,7 @@ Plataforma web para gerir cotas mensais de um bar, com foco em controlo de divid
 - `ADMIN_PASSWORD`
 - `PUBLIC_CONSULT_PIN`
 - `NEXT_PUBLIC_APP_URL`
+- `BLOB_READ_WRITE_TOKEN` (para upload direto de comprovativos)
 
 Nota: credenciais/PIN podem ser inicializados por `.env`, mas depois ficam geriveis no painel admin (guardados com hash).
 

@@ -4,6 +4,7 @@ import { createHash, randomBytes } from "node:crypto";
 import { revalidatePath } from "next/cache";
 import { cookies } from "next/headers";
 import { redirect } from "next/navigation";
+import { put } from "@vercel/blob";
 import {
   currentMonthKeyUtc,
   monthKeyFromUtcDate,
@@ -684,6 +685,18 @@ export async function saveEventCosts(formData: FormData) {
   const foodCents = parseAmountEurToCents(String(formData.get("foodEur") ?? "")) ?? 0;
   const drinkCents = parseAmountEurToCents(String(formData.get("drinkEur") ?? "")) ?? 0;
   const otherCents = parseAmountEurToCents(String(formData.get("otherEur") ?? "")) ?? 0;
+  const invoiceUrlRaw = String(formData.get("invoiceUrl") ?? "").trim();
+  let invoiceUrlFromText: string | null = invoiceUrlRaw ? invoiceUrlRaw : null;
+  if (invoiceUrlFromText) {
+    try {
+      const parsed = new URL(invoiceUrlFromText);
+      if (parsed.protocol !== "http:" && parsed.protocol !== "https:") {
+        redirect("/admin/convivios?error=2");
+      }
+    } catch {
+      redirect("/admin/convivios?error=2");
+    }
+  }
   if (
     !eventId ||
     totalCents < 0 ||
@@ -700,6 +713,41 @@ export async function saveEventCosts(formData: FormData) {
   const finalFoodCents = totalCents > 0 ? totalCents : foodCents;
   const finalDrinkCents = totalCents > 0 ? 0 : drinkCents;
   const finalOtherCents = totalCents > 0 ? 0 : otherCents;
+  const clearInvoice = String(formData.get("clearInvoice") ?? "").trim() === "on";
+
+  const event = await prisma.event.findUnique({
+    where: { id: eventId },
+    select: { invoiceUrl: true },
+  });
+  if (!event) {
+    redirect("/admin/convivios?error=2");
+  }
+
+  const invoiceFile = formData.get("invoiceFile");
+  let uploadedInvoiceUrl: string | null = null;
+  if (invoiceFile instanceof File && invoiceFile.size > 0) {
+    const maxBytes = 10 * 1024 * 1024;
+    if (invoiceFile.size > maxBytes) {
+      redirect("/admin/convivios?error=2");
+    }
+    const isPdf = invoiceFile.type === "application/pdf";
+    const isImage = invoiceFile.type.startsWith("image/");
+    if (!isPdf && !isImage) {
+      redirect("/admin/convivios?error=2");
+    }
+    const extFromType = isPdf ? "pdf" : "img";
+    const safeName = invoiceFile.name.replace(/[^a-zA-Z0-9._-]/g, "_");
+    const pathname = `convidios/${eventId}/${Date.now()}-${safeName || `fatura.${extFromType}`}`;
+    const blob = await put(pathname, invoiceFile, {
+      access: "public",
+      addRandomSuffix: true,
+    });
+    uploadedInvoiceUrl = blob.url;
+  }
+
+  const invoiceUrl = clearInvoice
+    ? null
+    : uploadedInvoiceUrl ?? invoiceUrlFromText ?? event.invoiceUrl ?? null;
 
   await prisma.event.update({
     where: { id: eventId },
@@ -707,6 +755,7 @@ export async function saveEventCosts(formData: FormData) {
       foodCents: finalFoodCents,
       drinkCents: finalDrinkCents,
       otherCents: finalOtherCents,
+      invoiceUrl,
     },
   });
 
@@ -714,7 +763,7 @@ export async function saveEventCosts(formData: FormData) {
     action: "UPDATE",
     entity: "EVENT_COSTS",
     entityId: eventId,
-    note: `Custos atualizados (F:${finalFoodCents} B:${finalDrinkCents} O:${finalOtherCents})`,
+    note: `Custos atualizados (F:${finalFoodCents} B:${finalDrinkCents} O:${finalOtherCents})${invoiceUrl ? " + comprovativo" : clearInvoice ? " (comprovativo removido)" : ""}`,
   });
 
   revalidatePath("/admin/convivios");
