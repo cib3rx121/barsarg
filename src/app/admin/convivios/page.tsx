@@ -8,6 +8,8 @@ import {
 import { requireAdminSession } from "@/lib/auth-admin";
 import { computeEventSplit, splitProfileLabel } from "@/lib/events";
 import { prisma } from "@/lib/prisma";
+import { MonthYearField } from "@/components/MonthYearField";
+import { currentMonthKeyUtc, formatMonthKeyLongPt, monthKeyFromUtcDate } from "@/lib/month-keys";
 
 const eurFmt = new Intl.NumberFormat("pt-PT", {
   style: "currency",
@@ -35,6 +37,8 @@ export default async function ConviviosAdminPage() {
       charges: true,
     },
   });
+  const currentMonth = currentMonthKeyUtc();
+  const currentYear = new Date().getUTCFullYear();
 
   return (
     <div className="relative min-h-screen overflow-x-hidden bg-gradient-to-br from-slate-50 via-emerald-50/35 to-slate-100 pb-20 dark:from-slate-950 dark:via-emerald-950/25 dark:to-slate-900">
@@ -62,7 +66,21 @@ export default async function ConviviosAdminPage() {
           </h2>
           <form action={createEvent} className="mt-4 grid gap-3">
             <input name="eventTitle" required placeholder="Título (ex.: Jantar de sexta)" className={inpt} />
-            <input name="eventDate" type="datetime-local" className={inpt} />
+            <div>
+              <label className="mb-1 block text-sm font-medium text-slate-700 dark:text-slate-300">
+                Mês do convívio
+              </label>
+              <MonthYearField
+                idPrefix="new-event-month"
+                name="eventMonthKey"
+                required
+                defaultValue={currentMonth}
+                className={inpt}
+                yearStart={currentYear - 3}
+                yearEnd={currentYear + 3}
+                showSelectionSummary={false}
+              />
+            </div>
             <textarea
               name="eventDescription"
               rows={3}
@@ -103,6 +121,11 @@ export default async function ConviviosAdminPage() {
                       <p className="text-xs uppercase tracking-wide text-slate-500 dark:text-slate-400">
                         Estado: {event.status}
                       </p>
+                      {event.eventDate ? (
+                        <p className="mt-1 text-xs text-slate-500 dark:text-slate-400">
+                          Mês: {formatMonthKeyLongPt(monthKeyFromUtcDate(event.eventDate))}
+                        </p>
+                      ) : null}
                       {event.description ? (
                         <p className="mt-2 text-sm text-slate-600 dark:text-slate-400">{event.description}</p>
                       ) : null}

@@ -129,6 +129,12 @@ export default async function ConsultaPage({ searchParams }: ConsultaPageProps) 
 
   await backfillMissingMonthlyCharges();
   const settingsRow = await getQuotaSettingsRow();
+  const openEvents = await prisma.event.findMany({
+    where: { status: "OPEN" },
+    orderBy: { createdAt: "desc" },
+    select: { id: true, title: true },
+    take: 3,
+  });
 
   const users = await prisma.user.findMany({
     where: { active: true },
@@ -164,6 +170,21 @@ export default async function ConsultaPage({ searchParams }: ConsultaPageProps) 
               Aviso da administração
             </p>
             <p className="mt-1 whitespace-pre-wrap">{settingsRow.publicNotice}</p>
+          </div>
+        ) : null}
+        {openEvents.length > 0 ? (
+          <div className="mt-4 rounded-xl border border-emerald-200/80 bg-emerald-50 px-4 py-3 text-sm text-emerald-900 dark:border-emerald-900/50 dark:bg-emerald-950/25 dark:text-emerald-100">
+            <p className="text-xs font-semibold uppercase tracking-wide text-emerald-800 dark:text-emerald-300">
+              Há convívio em aberto
+            </p>
+            <p className="mt-1">
+              Já podes entrar no teu detalhe e marcar participação.
+            </p>
+            <ul className="mt-2 list-disc space-y-1 pl-5 text-xs">
+              {openEvents.map((ev) => (
+                <li key={ev.id}>{ev.title}</li>
+              ))}
+            </ul>
           </div>
         ) : null}
 
