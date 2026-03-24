@@ -34,6 +34,7 @@ import { QUOTA_SETTINGS_ID } from "@/lib/quota";
 type AdminPageProps = {
   searchParams: Promise<{
     error?: string;
+    memberFilter?: string;
   }>;
 };
 
@@ -94,6 +95,13 @@ export default async function AdminPage({ searchParams }: AdminPageProps) {
   const hasAdminPasswordError = billingErr === "15";
   const hasMonthCloseError = billingErr === "16";
   const hasMonthReopenError = billingErr === "17";
+  const memberFilterParam = params.memberFilter ?? "all";
+  const initialMemberFilter: "all" | "debt" | "credit" | "zero" =
+    memberFilterParam === "debt" ||
+    memberFilterParam === "credit" ||
+    memberFilterParam === "zero"
+      ? memberFilterParam
+      : "all";
 
   const [users, quotaRow] = await Promise.all([
     prisma.user.findMany({
@@ -157,6 +165,20 @@ export default async function AdminPage({ searchParams }: AdminPageProps) {
   const totalDebtCents = serializedMembers
     .filter((m) => m.balanceCents > 0)
     .reduce((acc, m) => acc + m.balanceCents, 0);
+  const hasAnyError =
+    hasUserFormError ||
+    hasQuotaFormError ||
+    hasChargeStartBeforeEntry ||
+    hasBillingFormError ||
+    hasDeleteError ||
+    Boolean(payErrorMessage) ||
+    hasDebtFormError ||
+    hasConsultaPinError ||
+    hasPublicNoticeError ||
+    hasAdminCreateUserError ||
+    hasAdminPasswordError ||
+    hasMonthCloseError ||
+    hasMonthReopenError;
 
   async function logout() {
     "use server";
@@ -267,8 +289,14 @@ export default async function AdminPage({ searchParams }: AdminPageProps) {
           </details>
         </nav>
 
+        {hasAnyError ? (
+          <div className="admin-panel-section mt-6 rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-800 dark:border-red-900/50 dark:bg-red-950/35 dark:text-red-200">
+            Foi detetado um erro no último envio. Revê o formulário e tenta novamente.
+          </div>
+        ) : null}
+
         <section className="admin-panel-section mt-6 grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
-          <div className={`${card} p-4`}>
+          <a href="/admin?memberFilter=debt#associados" className={`${card} p-4 transition hover:border-red-300`}>
             <p className="text-xs uppercase tracking-wide text-slate-500 dark:text-slate-400">
               Em dívida
             </p>
@@ -276,8 +304,8 @@ export default async function AdminPage({ searchParams }: AdminPageProps) {
               {debtMembers}
             </p>
             <p className="mt-1 text-xs text-slate-500 dark:text-slate-400">Associados com valor em falta</p>
-          </div>
-          <div className={`${card} p-4`}>
+          </a>
+          <a href="/admin?memberFilter=credit#associados" className={`${card} p-4 transition hover:border-emerald-300`}>
             <p className="text-xs uppercase tracking-wide text-slate-500 dark:text-slate-400">
               Com crédito
             </p>
@@ -285,8 +313,8 @@ export default async function AdminPage({ searchParams }: AdminPageProps) {
               {creditMembers}
             </p>
             <p className="mt-1 text-xs text-slate-500 dark:text-slate-400">Associados com saldo a favor</p>
-          </div>
-          <div className={`${card} p-4`}>
+          </a>
+          <a href="/admin/convivios" className={`${card} p-4 transition hover:border-amber-300`}>
             <p className="text-xs uppercase tracking-wide text-slate-500 dark:text-slate-400">
               Convívios abertos
             </p>
@@ -294,8 +322,8 @@ export default async function AdminPage({ searchParams }: AdminPageProps) {
               {openEventsCount}
             </p>
             <p className="mt-1 text-xs text-slate-500 dark:text-slate-400">Eventos a aguardar gestão</p>
-          </div>
-          <div className={`${card} p-4`}>
+          </a>
+          <a href="/admin?memberFilter=debt#associados" className={`${card} p-4 transition hover:border-slate-300`}>
             <p className="text-xs uppercase tracking-wide text-slate-500 dark:text-slate-400">
               Dívida total
             </p>
@@ -303,7 +331,7 @@ export default async function AdminPage({ searchParams }: AdminPageProps) {
               {eurFmt.format(totalDebtCents / 100)}
             </p>
             <p className="mt-1 text-xs text-slate-500 dark:text-slate-400">Associados totais: {totalMembers}</p>
-          </div>
+          </a>
         </section>
 
         <section
@@ -821,7 +849,10 @@ export default async function AdminPage({ searchParams }: AdminPageProps) {
           ) : null}
 
           <div className="mt-6">
-            <AdminAssociatesWorkspace members={serializedMembers} />
+            <AdminAssociatesWorkspace
+              members={serializedMembers}
+              initialBalanceFilter={initialMemberFilter}
+            />
           </div>
         </section>
       </div>

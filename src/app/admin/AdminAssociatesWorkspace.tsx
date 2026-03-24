@@ -54,14 +54,16 @@ const sectionCard =
 
 export function AdminAssociatesWorkspace({
   members,
+  initialBalanceFilter = "all",
 }: {
   members: SerializedMember[];
+  initialBalanceFilter?: "all" | "debt" | "credit" | "zero";
 }) {
   const [openId, setOpenId] = useState<string | null>(null);
   const [query, setQuery] = useState("");
   const [balanceFilter, setBalanceFilter] = useState<
     "all" | "debt" | "credit" | "zero"
-  >("all");
+  >(initialBalanceFilter);
   const [quickPayMonth, setQuickPayMonth] = useState<string>("");
   const selected = members.find((m) => m.id === openId) ?? null;
 

@@ -207,6 +207,83 @@ export default async function ConviviosAdminPage({ searchParams }: ConviviosPage
                     </div>
                   </div>
 
+                  <details className="mt-4 rounded-xl border border-slate-200/80 bg-slate-50/70 p-3 md:hidden dark:border-slate-700/80 dark:bg-slate-800/35">
+                    <summary className="cursor-pointer text-sm font-semibold text-slate-800 dark:text-slate-100">
+                      Custos e ações
+                    </summary>
+                    <p className="mt-1 text-xs text-slate-500 dark:text-slate-400">
+                      Expande para editar custos, inscrições e liquidação.
+                    </p>
+                    <form action={saveEventCosts} className="mt-3 grid gap-3">
+                      <input type="hidden" name="eventId" value={event.id} />
+                      <div className="rounded-xl border border-emerald-200/80 bg-emerald-50/70 p-3 text-xs text-emerald-900 dark:border-emerald-900/40 dark:bg-emerald-950/30 dark:text-emerald-100">
+                        <p className="font-semibold">Modo rápido (recomendado): Total único</p>
+                      </div>
+                      <input
+                        name="totalEur"
+                        className={inpt}
+                        placeholder="Total único € (ex.: 85,00)"
+                      />
+                      <div>
+                        <label className="mb-1 block text-xs font-semibold uppercase tracking-wide text-slate-500 dark:text-slate-400">
+                          Comida (€)
+                        </label>
+                        <input
+                          name="foodEur"
+                          defaultValue={(event.foodCents / 100).toFixed(2).replace(".", ",")}
+                          className={inpt}
+                          placeholder="Ex.: 45,00"
+                        />
+                      </div>
+                      <div>
+                        <label className="mb-1 block text-xs font-semibold uppercase tracking-wide text-slate-500 dark:text-slate-400">
+                          Bebida (€)
+                        </label>
+                        <input
+                          name="drinkEur"
+                          defaultValue={(event.drinkCents / 100).toFixed(2).replace(".", ",")}
+                          className={inpt}
+                          placeholder="Ex.: 30,00"
+                        />
+                      </div>
+                      <div>
+                        <label className="mb-1 block text-xs font-semibold uppercase tracking-wide text-slate-500 dark:text-slate-400">
+                          Outros (€)
+                        </label>
+                        <input
+                          name="otherEur"
+                          defaultValue={(event.otherCents / 100).toFixed(2).replace(".", ",")}
+                          className={inpt}
+                          placeholder="Ex.: 10,00"
+                        />
+                      </div>
+                      <button type="submit" className={btnSecondary}>
+                        Guardar custos
+                      </button>
+                    </form>
+                    <div className="mt-3 grid gap-2">
+                      <form action={closeEventRegistrations}>
+                        <input type="hidden" name="eventId" value={event.id} />
+                        <button type="submit" className={`${btnSecondary} w-full`}>
+                          Encerrar inscrições
+                        </button>
+                      </form>
+                      <form action={reopenEventRegistrations}>
+                        <input type="hidden" name="eventId" value={event.id} />
+                        <button type="submit" className={`${btnSecondary} w-full`}>
+                          Reabrir inscrições
+                        </button>
+                      </form>
+                      <form action={applyEventSettlement}>
+                        <input type="hidden" name="eventId" value={event.id} />
+                        <button type="submit" className={`${btnPrimary} w-full`}>
+                          Liquidar e lançar no saldo
+                        </button>
+                      </form>
+                    </div>
+                  </details>
+
+                  <div className="hidden md:block">
                   <form action={saveEventCosts} className="mt-4 grid gap-3 sm:grid-cols-4">
                     <input type="hidden" name="eventId" value={event.id} />
                     <div className="sm:col-span-4 rounded-xl border border-emerald-200/80 bg-emerald-50/70 p-3 text-xs text-emerald-900 dark:border-emerald-900/40 dark:bg-emerald-950/30 dark:text-emerald-100">
@@ -269,8 +346,9 @@ export default async function ConviviosAdminPage({ searchParams }: ConviviosPage
                       separar custos.
                     </p>
                   </form>
+                  </div>
 
-                  <div className="mt-4 grid gap-2 sm:grid-cols-2">
+                  <div className="mt-4 hidden gap-2 sm:grid-cols-2 md:grid">
                     <form action={closeEventRegistrations}>
                       <input type="hidden" name="eventId" value={event.id} />
                       <button type="submit" className={`${btnSecondary} w-full`}>
@@ -346,7 +424,7 @@ export default async function ConviviosAdminPage({ searchParams }: ConviviosPage
                     </form>
                   </details>
 
-                  <div className="mt-5 overflow-x-auto rounded-xl border border-slate-200/80 dark:border-slate-700/80">
+                  <div className="mt-5 hidden overflow-x-auto rounded-xl border border-slate-200/80 md:block dark:border-slate-700/80">
                     <table className="w-full min-w-[620px] text-left text-sm">
                       <thead className="bg-slate-100/90 text-slate-700 dark:bg-slate-800/90 dark:text-slate-200">
                         <tr>
@@ -399,6 +477,23 @@ export default async function ConviviosAdminPage({ searchParams }: ConviviosPage
                       </tbody>
                     </table>
                   </div>
+
+                  <details className="mt-4 rounded-xl border border-slate-200/80 bg-white/80 p-3 md:hidden dark:border-slate-700/80 dark:bg-slate-900/35">
+                    <summary className="cursor-pointer text-sm font-semibold text-slate-800 dark:text-slate-100">
+                      Participantes e valores
+                    </summary>
+                    <div className="mt-3 space-y-2">
+                      {event.participants.map((p) => (
+                        <div key={p.id} className="rounded-lg border border-slate-200/80 p-2 dark:border-slate-700/80">
+                          <p className="text-sm font-medium text-slate-900 dark:text-slate-100">{p.user.name}</p>
+                          <p className="text-xs text-slate-500 dark:text-slate-400">
+                            {p.status === "YES" ? "Participa" : "Não participa"} · {splitProfileLabel(p.splitProfile)} ·{" "}
+                            {eurFmt.format((split.get(p.userId) ?? 0) / 100)}
+                          </p>
+                        </div>
+                      ))}
+                    </div>
+                  </details>
                 </article>
               );
             })
