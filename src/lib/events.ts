@@ -6,6 +6,11 @@ export type EventParticipantRow = {
   splitProfile: string;
 };
 
+/** Aceita "YES", "yes", espaços, etc. — evita split vazio por inconsistência na BD. */
+export function isParticipantYes(status: string): boolean {
+  return String(status ?? "").trim().toUpperCase() === "YES";
+}
+
 function normalizeProfile(raw: string): SplitProfile {
   if (raw === "FOOD_ONLY" || raw === "ALL") {
     return raw;
@@ -38,7 +43,7 @@ export function computeEventSplit(input: {
   otherCents: number;
 }): Map<string, number> {
   const active = input.participants
-    .filter((p) => p.status === "YES")
+    .filter((p) => isParticipantYes(p.status))
     .map((p) => ({
       userId: p.userId,
       profile: normalizeProfile(p.splitProfile),

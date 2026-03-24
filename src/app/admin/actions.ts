@@ -915,11 +915,18 @@ export async function applyEventSettlement(formData: FormData) {
       participants: {
         select: { userId: true, status: true, splitProfile: true },
       },
-      charges: { select: { id: true }, take: 1 },
     },
   });
-  if (!event || event.charges.length > 0) {
+  if (!event) {
     redirect("/admin/convivios?error=4");
+  }
+  if (event.status === "SETTLED") {
+    redirect("/admin/convivios?error=41");
+  }
+
+  const totalCostsCents = event.foodCents + event.drinkCents + event.otherCents;
+  if (totalCostsCents <= 0) {
+    redirect("/admin/convivios?error=42");
   }
 
   const split = computeEventSplit({
@@ -928,36 +935,34 @@ export async function applyEventSettlement(formData: FormData) {
     drinkCents: event.drinkCents,
     otherCents: event.otherCents,
   });
-  const totalCostsCents = event.foodCents + event.drinkCents + event.otherCents;
-  if (totalCostsCents <= 0) {
-    redirect("/admin/convivios?error=4");
-  }
   const userIds = [...split.keys()];
   if (userIds.length === 0) {
-    redirect("/admin/convivios?error=4");
+    redirect("/admin/convivios?error=43");
   }
 
-  for (const userId of userIds) {
-    const amountCents = split.get(userId) ?? 0;
-    if (amountCents <= 0) continue;
+  await prisma.$transaction(async (tx) => {
+    for (const userId of userIds) {
+      const amountCents = split.get(userId) ?? 0;
+      if (amountCents <= 0) continue;
 
-    await prisma.ledgerEntry.create({
-      data: {
-        userId,
-        deltaCents: amountCents,
-        kind: "ADJUSTMENT",
-        monthKey: null,
-        note: `Convívio: ${event.title}`,
-      },
-    });
-    await prisma.eventCharge.create({
-      data: { eventId, userId, amountCents },
-    });
-  }
+      await tx.ledgerEntry.create({
+        data: {
+          userId,
+          deltaCents: amountCents,
+          kind: "ADJUSTMENT",
+          monthKey: null,
+          note: `Convívio: ${event.title}`,
+        },
+      });
+      await tx.eventCharge.create({
+        data: { eventId, userId, amountCents },
+      });
+    }
 
-  await prisma.event.update({
-    where: { id: eventId },
-    data: { status: "SETTLED" },
+    await tx.event.update({
+      where: { id: eventId },
+      data: { status: "SETTLED" },
+    });
   });
 
   await logAdminEvent({

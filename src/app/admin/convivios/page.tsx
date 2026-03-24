@@ -9,7 +9,11 @@ import {
   updateEventParticipantAdmin,
 } from "@/app/admin/actions";
 import { requireAdminSession } from "@/lib/auth-admin";
-import { computeEventSplit, splitProfileLabel } from "@/lib/events";
+import {
+  computeEventSplit,
+  isParticipantYes,
+  splitProfileLabel,
+} from "@/lib/events";
 import { prisma } from "@/lib/prisma";
 import { DayMonthYearField } from "@/components/DayMonthYearField";
 
@@ -45,6 +49,9 @@ export default async function ConviviosAdminPage({ searchParams }: ConviviosPage
   const saveCostsError = error === "2";
   const closeError = error === "3";
   const settlementError = error === "4";
+  const settlementAlreadyError = error === "41";
+  const settlementNoCostsError = error === "42";
+  const settlementNoParticipantsError = error === "43";
   const reopenError = error === "5";
   const deleteError = error === "6";
   const participantError = error === "7";
@@ -150,7 +157,22 @@ export default async function ConviviosAdminPage({ searchParams }: ConviviosPage
           ) : null}
           {settlementError ? (
             <p className="rounded-lg border border-red-200 bg-red-50 px-3 py-2 text-sm text-red-800 dark:border-red-900/50 dark:bg-red-950/35 dark:text-red-200">
-              Não foi possível fechar contas. Verifica se há custos superiores a zero, inscritos com “Sim” e se ainda não foi fechado.
+              Não foi possível fechar contas. Tenta novamente ou contacta o suporte técnico.
+            </p>
+          ) : null}
+          {settlementAlreadyError ? (
+            <p className="rounded-lg border border-amber-200 bg-amber-50 px-3 py-2 text-sm text-amber-900 dark:border-amber-900/50 dark:bg-amber-950/35 dark:text-amber-100">
+              Este convívio já tem contas fechadas (não é possível repetir).
+            </p>
+          ) : null}
+          {settlementNoCostsError ? (
+            <p className="rounded-lg border border-red-200 bg-red-50 px-3 py-2 text-sm text-red-800 dark:border-red-900/50 dark:bg-red-950/35 dark:text-red-200">
+              Guarda primeiro os custos (total ou categorias) com valor superior a zero.
+            </p>
+          ) : null}
+          {settlementNoParticipantsError ? (
+            <p className="rounded-lg border border-red-200 bg-red-50 px-3 py-2 text-sm text-red-800 dark:border-red-900/50 dark:bg-red-950/35 dark:text-red-200">
+              Não há ninguém com “participa” para dividir. Confirma as inscrições (pelo menos um “Sim”).
             </p>
           ) : null}
           {events.length === 0 ? (
@@ -159,7 +181,9 @@ export default async function ConviviosAdminPage({ searchParams }: ConviviosPage
             </div>
           ) : (
             events.map((event) => {
-              const yesCount = event.participants.filter((p) => p.status === "YES").length;
+              const yesCount = event.participants.filter((p) =>
+                isParticipantYes(p.status),
+              ).length;
               const split = computeEventSplit({
                 participants: event.participants.map((p) => ({
                   userId: p.userId,
