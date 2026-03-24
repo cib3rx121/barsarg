@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { balanceToneClass } from "@/lib/balance-display";
+import { MonthYearField } from "@/components/MonthYearField";
 import {
   createUser,
   deleteMember,
@@ -58,6 +59,7 @@ export function AdminAssociatesWorkspace({
     style: "currency",
     currency: "EUR",
   });
+  const currentYear = new Date().getUTCFullYear();
 
   useEffect(() => {
     if (!openId) return;
@@ -104,31 +106,34 @@ export function AdminAssociatesWorkspace({
         </div>
         <div className="lg:col-span-2">
           <label
-            htmlFor="new-entry"
+            htmlFor="new-entry-month"
             className="mb-1.5 block text-sm font-medium text-slate-700 dark:text-slate-300"
           >
             Mês de entrada
           </label>
-          <input
-            id="new-entry"
+          <MonthYearField
+            idPrefix="new-entry"
             name="entryDate"
-            type="month"
             required
             className={inpt}
+            yearStart={currentYear - 8}
+            yearEnd={currentYear + 4}
           />
         </div>
         <div className="lg:col-span-2">
           <label
-            htmlFor="new-charge"
+            htmlFor="new-charge-month"
             className="mb-1.5 block text-sm font-medium text-slate-700 dark:text-slate-300"
           >
             Mês de início da cobrança (opc.)
           </label>
-          <input
-            id="new-charge"
+          <MonthYearField
+            idPrefix="new-charge"
             name="chargeStartDate"
-            type="month"
+            allowEmpty
             className={inpt}
+            yearStart={currentYear - 8}
+            yearEnd={currentYear + 4}
           />
         </div>
         <div className="flex lg:col-span-2">
@@ -345,23 +350,28 @@ export function AdminAssociatesWorkspace({
                   <label className="mb-1 block text-sm font-medium text-slate-700 dark:text-slate-300">
                     Mês de entrada
                   </label>
-                  <input
+                  <MonthYearField
+                    idPrefix={`edit-entry-${selected.id}`}
                     name="entryDate"
-                    type="month"
                     required
                     defaultValue={selected.entryMonth}
                     className={inpt}
+                    yearStart={currentYear - 8}
+                    yearEnd={currentYear + 4}
                   />
                 </div>
                 <div>
                   <label className="mb-1 block text-sm font-medium text-slate-700 dark:text-slate-300">
                     Mês de início da cobrança (opcional)
                   </label>
-                  <input
+                  <MonthYearField
+                    idPrefix={`edit-charge-${selected.id}`}
                     name="chargeStartDate"
-                    type="month"
+                    allowEmpty
                     defaultValue={selected.chargeStartMonth ?? ""}
                     className={inpt}
+                    yearStart={currentYear - 8}
+                    yearEnd={currentYear + 4}
                   />
                 </div>
                 <button type="submit" className={`${btnPrimary} w-full`}>
@@ -395,7 +405,14 @@ export function AdminAssociatesWorkspace({
                   <label className="mb-1 block text-sm font-medium text-slate-700 dark:text-slate-300">
                     Mês de referência (opcional)
                   </label>
-                  <input name="payMonthKey" type="month" className={inpt} />
+                  <MonthYearField
+                    idPrefix={`pay-month-${selected.id}`}
+                    name="payMonthKey"
+                    allowEmpty
+                    className={inpt}
+                    yearStart={currentYear - 8}
+                    yearEnd={currentYear + 4}
+                  />
                 </div>
                 <div>
                   <label className="mb-1 block text-sm font-medium text-slate-700 dark:text-slate-300">
@@ -472,22 +489,26 @@ export function AdminAssociatesWorkspace({
                     <label className="mb-1 block text-xs font-medium text-slate-600 dark:text-slate-400">
                       De
                     </label>
-                    <input
+                    <MonthYearField
+                      idPrefix={`waive-from-${selected.id}`}
                       name="waiveFromMonth"
-                      type="month"
                       required
                       className={inpt}
+                      yearStart={currentYear - 8}
+                      yearEnd={currentYear + 4}
                     />
                   </div>
                   <div>
                     <label className="mb-1 block text-xs font-medium text-slate-600 dark:text-slate-400">
                       Até
                     </label>
-                    <input
+                    <MonthYearField
+                      idPrefix={`waive-to-${selected.id}`}
                       name="waiveToMonth"
-                      type="month"
                       required
                       className={inpt}
+                      yearStart={currentYear - 8}
+                      yearEnd={currentYear + 4}
                     />
                   </div>
                 </div>
