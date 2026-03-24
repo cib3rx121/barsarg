@@ -61,6 +61,8 @@ const linkSubtle =
   "text-sm font-medium text-slate-600 underline decoration-slate-300 underline-offset-2 transition hover:text-emerald-700 dark:text-slate-400 dark:decoration-slate-600 dark:hover:text-emerald-400";
 
 const sectionClass = "scroll-mt-24";
+const detailsSummary =
+  "flex cursor-pointer list-none items-center justify-between rounded-xl border border-slate-200/80 bg-slate-50/80 px-4 py-3 text-sm font-semibold text-slate-800 transition hover:bg-slate-100 dark:border-slate-700/80 dark:bg-slate-800/40 dark:text-slate-100 dark:hover:bg-slate-800";
 
 export default async function AdminPage({ searchParams }: AdminPageProps) {
   await requireAdminSession();
@@ -342,187 +344,193 @@ export default async function AdminPage({ searchParams }: AdminPageProps) {
         </section>
 
         <section className={`admin-panel-section mt-6 ${card}`}>
-          <h2 className="text-lg font-semibold text-slate-900 dark:text-white">
-            Histórico (audit log)
-          </h2>
-          <p className="mt-2 text-sm text-slate-600 dark:text-slate-400">
-            Últimas ações administrativas registadas no sistema.
-          </p>
-          {auditRows.length === 0 ? (
-            <p className="mt-4 text-sm text-slate-500 dark:text-slate-400">
-              Ainda não existem ações registadas.
+          <details>
+            <summary className={detailsSummary}>
+              Histórico (audit log)
+              <span className="text-xs font-medium text-slate-500 dark:text-slate-400">
+                {auditRows.length} evento(s)
+              </span>
+            </summary>
+            <p className="mt-3 text-sm text-slate-600 dark:text-slate-400">
+              Últimas ações administrativas registadas no sistema.
             </p>
-          ) : (
-            <ul className="mt-4 space-y-2">
-              {auditRows.map((row) => (
-                <li
-                  key={row.id}
-                  className="rounded-xl border border-slate-200/80 bg-slate-50/60 px-3 py-2 text-sm dark:border-slate-700/80 dark:bg-slate-800/40"
-                >
-                  <p className="font-medium text-slate-800 dark:text-slate-100">
-                    {row.action} · {row.entity}
-                  </p>
-                  {row.note ? (
-                    <p className="text-slate-600 dark:text-slate-400">{row.note}</p>
-                  ) : null}
-                  <p className="text-xs text-slate-500 dark:text-slate-500">
-                    {dateTimeFmt.format(row.createdAt)}
-                  </p>
-                </li>
-              ))}
-            </ul>
-          )}
+            {auditRows.length === 0 ? (
+              <p className="mt-4 text-sm text-slate-500 dark:text-slate-400">
+                Ainda não existem ações registadas.
+              </p>
+            ) : (
+              <ul className="mt-4 space-y-2">
+                {auditRows.map((row) => (
+                  <li
+                    key={row.id}
+                    className="rounded-xl border border-slate-200/80 bg-slate-50/60 px-3 py-2 text-sm dark:border-slate-700/80 dark:bg-slate-800/40"
+                  >
+                    <p className="font-medium text-slate-800 dark:text-slate-100">
+                      {row.action} · {row.entity}
+                    </p>
+                    {row.note ? (
+                      <p className="text-slate-600 dark:text-slate-400">{row.note}</p>
+                    ) : null}
+                    <p className="text-xs text-slate-500 dark:text-slate-500">
+                      {dateTimeFmt.format(row.createdAt)}
+                    </p>
+                  </li>
+                ))}
+              </ul>
+            )}
+          </details>
         </section>
 
         <section className={`admin-panel-section mt-6 grid gap-6 lg:grid-cols-2`}>
           <div className={card}>
-            <h2 className="text-lg font-semibold text-slate-900 dark:text-white">
-              Segurança de acesso
-            </h2>
-            <p className="mt-2 text-sm text-slate-600 dark:text-slate-400">
-              Atualize credenciais do admin e PIN da consulta pública.
-            </p>
+            <details>
+              <summary className={detailsSummary}>Segurança de acesso</summary>
+              <p className="mt-3 text-sm text-slate-600 dark:text-slate-400">
+                Área recolhível para não ocupar a página toda. Primeiro altere login/senha
+                do admin; abaixo altere o PIN público.
+              </p>
 
-            {hasAdminCredsError ? (
-              <p className="mt-4 rounded-lg border border-red-200 bg-red-50 px-3 py-2 text-sm text-red-800 dark:border-red-900/50 dark:bg-red-950/35 dark:text-red-200">
-                Credenciais inválidas. Confirme a palavra-passe atual e os novos dados.
-              </p>
-            ) : null}
-            <form action={updateAdminCredentials} className="mt-4 space-y-3">
-              <p className="text-xs font-semibold uppercase tracking-wide text-slate-500 dark:text-slate-400">
-                Alterar login admin
-              </p>
-              <div>
-                <label className="mb-1 block text-sm font-medium text-slate-700 dark:text-slate-300">
-                  Utilizador atual em vigor
-                </label>
-                <input
-                  type="text"
-                  value={quotaRow?.adminUsername ?? process.env.ADMIN_USERNAME ?? ""}
-                  readOnly
-                  className={`${inpt} cursor-not-allowed bg-slate-100/90 dark:bg-slate-800/80`}
-                />
-              </div>
-              <div>
-                <label className="mb-1 block text-sm font-medium text-slate-700 dark:text-slate-300">
-                  Palavra-passe atual
-                </label>
-                <input name="currentPassword" type="password" required className={inpt} />
-              </div>
-              <div>
-                <label className="mb-1 block text-sm font-medium text-slate-700 dark:text-slate-300">
-                  Novo utilizador
-                </label>
-                <input
-                  name="newUsername"
-                  type="text"
-                  required
-                  defaultValue={quotaRow?.adminUsername ?? process.env.ADMIN_USERNAME ?? ""}
-                  className={inpt}
-                />
-              </div>
-              <div className="grid gap-3 sm:grid-cols-2">
+              {hasAdminCredsError ? (
+                <p className="mt-4 rounded-lg border border-red-200 bg-red-50 px-3 py-2 text-sm text-red-800 dark:border-red-900/50 dark:bg-red-950/35 dark:text-red-200">
+                  Credenciais inválidas. Confirme a palavra-passe atual e os novos dados.
+                </p>
+              ) : null}
+              <form action={updateAdminCredentials} className="mt-4 space-y-3 rounded-xl border border-slate-200/80 bg-slate-50/70 p-4 dark:border-slate-700/80 dark:bg-slate-800/35">
+                <p className="text-xs font-semibold uppercase tracking-wide text-slate-500 dark:text-slate-400">
+                  1) Alterar credenciais do admin
+                </p>
                 <div>
                   <label className="mb-1 block text-sm font-medium text-slate-700 dark:text-slate-300">
-                    Nova palavra-passe
+                    Login atual
                   </label>
                   <input
-                    name="newPassword"
-                    type="password"
-                    minLength={6}
-                    required
-                    className={inpt}
+                    type="text"
+                    value={quotaRow?.adminUsername ?? process.env.ADMIN_USERNAME ?? ""}
+                    readOnly
+                    className={`${inpt} cursor-not-allowed bg-slate-100/90 dark:bg-slate-800/80`}
                   />
                 </div>
                 <div>
                   <label className="mb-1 block text-sm font-medium text-slate-700 dark:text-slate-300">
-                    Confirmar palavra-passe
+                    Palavra-passe atual (confirmação)
+                  </label>
+                  <input name="currentPassword" type="password" required className={inpt} />
+                </div>
+                <div>
+                  <label className="mb-1 block text-sm font-medium text-slate-700 dark:text-slate-300">
+                    Novo login (nome de utilizador)
                   </label>
                   <input
-                    name="confirmPassword"
-                    type="password"
-                    minLength={6}
+                    name="newUsername"
+                    type="text"
                     required
+                    defaultValue={quotaRow?.adminUsername ?? process.env.ADMIN_USERNAME ?? ""}
                     className={inpt}
                   />
                 </div>
-              </div>
-              <button type="submit" className={btnPrimary}>
-                Guardar credenciais
-              </button>
-            </form>
+                <div className="grid gap-3 sm:grid-cols-2">
+                  <div>
+                    <label className="mb-1 block text-sm font-medium text-slate-700 dark:text-slate-300">
+                      Nova palavra-passe
+                    </label>
+                    <input
+                      name="newPassword"
+                      type="password"
+                      minLength={6}
+                      required
+                      className={inpt}
+                    />
+                  </div>
+                  <div>
+                    <label className="mb-1 block text-sm font-medium text-slate-700 dark:text-slate-300">
+                      Confirmar nova palavra-passe
+                    </label>
+                    <input
+                      name="confirmPassword"
+                      type="password"
+                      minLength={6}
+                      required
+                      className={inpt}
+                    />
+                  </div>
+                </div>
+                <button type="submit" className={btnPrimary}>
+                  Guardar credenciais
+                </button>
+              </form>
 
-            {hasConsultaPinError ? (
-              <p className="mt-5 rounded-lg border border-red-200 bg-red-50 px-3 py-2 text-sm text-red-800 dark:border-red-900/50 dark:bg-red-950/35 dark:text-red-200">
-                PIN inválido. Use apenas números (4 a 10 dígitos) e confirme corretamente.
-              </p>
-            ) : null}
-            <form action={updateConsultaPin} className="mt-4 space-y-3">
-              <p className="text-xs font-semibold uppercase tracking-wide text-slate-500 dark:text-slate-400">
-                Alterar PIN da consulta pública
-              </p>
-              <div className="grid gap-3 sm:grid-cols-2">
-                <div>
-                  <label className="mb-1 block text-sm font-medium text-slate-700 dark:text-slate-300">
-                    Novo PIN
-                  </label>
-                  <input
-                    name="consultaPin"
-                    type="password"
-                    inputMode="numeric"
-                    required
-                    className={inpt}
-                  />
+              {hasConsultaPinError ? (
+                <p className="mt-5 rounded-lg border border-red-200 bg-red-50 px-3 py-2 text-sm text-red-800 dark:border-red-900/50 dark:bg-red-950/35 dark:text-red-200">
+                  PIN inválido. Use apenas números (4 a 10 dígitos) e confirme corretamente.
+                </p>
+              ) : null}
+              <form action={updateConsultaPin} className="mt-4 space-y-3 rounded-xl border border-slate-200/80 bg-slate-50/70 p-4 dark:border-slate-700/80 dark:bg-slate-800/35">
+                <p className="text-xs font-semibold uppercase tracking-wide text-slate-500 dark:text-slate-400">
+                  2) Alterar PIN da consulta pública
+                </p>
+                <div className="grid gap-3 sm:grid-cols-2">
+                  <div>
+                    <label className="mb-1 block text-sm font-medium text-slate-700 dark:text-slate-300">
+                      Novo PIN
+                    </label>
+                    <input
+                      name="consultaPin"
+                      type="password"
+                      inputMode="numeric"
+                      required
+                      className={inpt}
+                    />
+                  </div>
+                  <div>
+                    <label className="mb-1 block text-sm font-medium text-slate-700 dark:text-slate-300">
+                      Confirmar PIN
+                    </label>
+                    <input
+                      name="confirmConsultaPin"
+                      type="password"
+                      inputMode="numeric"
+                      required
+                      className={inpt}
+                    />
+                  </div>
                 </div>
-                <div>
-                  <label className="mb-1 block text-sm font-medium text-slate-700 dark:text-slate-300">
-                    Confirmar PIN
-                  </label>
-                  <input
-                    name="confirmConsultaPin"
-                    type="password"
-                    inputMode="numeric"
-                    required
-                    className={inpt}
-                  />
-                </div>
-              </div>
-              <button type="submit" className={btnSecondary}>
-                Guardar PIN
-              </button>
-            </form>
+                <button type="submit" className={btnSecondary}>
+                  Guardar PIN
+                </button>
+              </form>
+            </details>
           </div>
 
           <div className={card}>
-            <h2 className="text-lg font-semibold text-slate-900 dark:text-white">
-              Aviso público
-            </h2>
-            <p className="mt-2 text-sm text-slate-600 dark:text-slate-400">
-              Mensagem exibida na página pública da consulta para todos os utilizadores.
-            </p>
-            {hasPublicNoticeError ? (
-              <p className="mt-4 rounded-lg border border-red-200 bg-red-50 px-3 py-2 text-sm text-red-800 dark:border-red-900/50 dark:bg-red-950/35 dark:text-red-200">
-                O aviso é demasiado longo (máx. 1000 caracteres).
+            <details>
+              <summary className={detailsSummary}>Aviso público</summary>
+              <p className="mt-3 text-sm text-slate-600 dark:text-slate-400">
+                Mensagem exibida na página pública da consulta para todos os utilizadores.
               </p>
-            ) : null}
-            <form action={updatePublicNotice} className="mt-4 space-y-3">
-              <div>
-                <label className="mb-1 block text-sm font-medium text-slate-700 dark:text-slate-300">
-                  Texto do aviso
-                </label>
-                <textarea
-                  name="publicNotice"
-                  defaultValue={quotaRow?.publicNotice ?? ""}
-                  rows={7}
-                  maxLength={1000}
-                  className={`${inpt} min-h-[9rem] resize-y`}
-                  placeholder="Ex.: Fecho do bar no feriado de 25 de Abril."
-                />
-              </div>
-              <button type="submit" className={btnPrimary}>
-                Guardar aviso
-              </button>
-            </form>
+              {hasPublicNoticeError ? (
+                <p className="mt-4 rounded-lg border border-red-200 bg-red-50 px-3 py-2 text-sm text-red-800 dark:border-red-900/50 dark:bg-red-950/35 dark:text-red-200">
+                  O aviso é demasiado longo (máx. 1000 caracteres).
+                </p>
+              ) : null}
+              <form action={updatePublicNotice} className="mt-4 space-y-3">
+                <div>
+                  <label className="mb-1 block text-sm font-medium text-slate-700 dark:text-slate-300">
+                    Texto do aviso
+                  </label>
+                  <textarea
+                    name="publicNotice"
+                    defaultValue={quotaRow?.publicNotice ?? ""}
+                    rows={7}
+                    maxLength={1000}
+                    className={`${inpt} min-h-[9rem] resize-y`}
+                    placeholder="Ex.: Fecho do bar no feriado de 25 de Abril."
+                  />
+                </div>
+                <button type="submit" className={btnPrimary}>
+                  Guardar aviso
+                </button>
+              </form>
+            </details>
           </div>
         </section>
 
