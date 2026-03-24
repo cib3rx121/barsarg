@@ -73,6 +73,16 @@ export function AdminAssociatesWorkspace({
     currentMonth.getUTCMonth() + 1,
   ).padStart(2, "0")}`;
 
+  function openMember(id: string) {
+    setQuickPayMonth("");
+    setOpenId(id);
+  }
+
+  function closeMember() {
+    setOpenId(null);
+    setQuickPayMonth("");
+  }
+
   const filteredMembers = useMemo(() => {
     const q = query.trim().toLowerCase();
     return members.filter((m) => {
@@ -93,10 +103,6 @@ export function AdminAssociatesWorkspace({
     };
     window.addEventListener("keydown", onKey);
     return () => window.removeEventListener("keydown", onKey);
-  }, [openId]);
-
-  useEffect(() => {
-    setQuickPayMonth("");
   }, [openId]);
 
   useEffect(() => {
@@ -208,7 +214,7 @@ export function AdminAssociatesWorkspace({
                 <li key={m.id}>
                   <button
                     type="button"
-                    onClick={() => setOpenId(m.id)}
+                    onClick={() => openMember(m.id)}
                     className="touch-target w-full rounded-2xl border border-slate-200/90 bg-white/95 p-4 text-left shadow-sm transition active:scale-[0.99] dark:border-slate-700 dark:bg-slate-900/50"
                   >
                     <div className="flex items-start justify-between gap-3">
@@ -261,11 +267,11 @@ export function AdminAssociatesWorkspace({
                       key={m.id}
                       role="button"
                       tabIndex={0}
-                      onClick={() => setOpenId(m.id)}
+                      onClick={() => openMember(m.id)}
                       onKeyDown={(e) => {
                         if (e.key === "Enter" || e.key === " ") {
                           e.preventDefault();
-                          setOpenId(m.id);
+                          openMember(m.id);
                         }
                       }}
                       className="cursor-pointer bg-white/90 text-slate-900 transition-colors hover:bg-emerald-50/70 focus:bg-emerald-50/70 focus:outline-none dark:bg-slate-900/40 dark:text-slate-100 dark:hover:bg-emerald-950/30"
@@ -312,7 +318,7 @@ export function AdminAssociatesWorkspace({
             type="button"
             aria-label="Fechar painel"
             className="drawer-backdrop-animate absolute inset-0 touch-manipulation bg-slate-900/45 backdrop-blur-[2px]"
-            onClick={() => setOpenId(null)}
+            onClick={closeMember}
           />
           <aside className="drawer-panel-animate absolute bottom-0 right-0 top-0 z-50 flex min-h-0 w-full max-w-full flex-col overflow-hidden border-l border-slate-200 bg-white shadow-2xl sm:max-w-md dark:border-slate-700 dark:bg-slate-900">
             <div className="flex shrink-0 items-start justify-between gap-3 border-b border-slate-200 bg-white/95 p-4 backdrop-blur-md dark:border-slate-700 dark:bg-slate-900/95">
@@ -368,7 +374,7 @@ export function AdminAssociatesWorkspace({
               </div>
               <button
                 type="button"
-                onClick={() => setOpenId(null)}
+                onClick={closeMember}
                 className="touch-target shrink-0 rounded-xl border border-slate-200 px-4 py-2 text-sm font-medium text-slate-700 transition hover:bg-slate-50 dark:border-slate-600 dark:text-slate-200 dark:hover:bg-slate-800"
               >
                 Fechar
