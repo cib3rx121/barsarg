@@ -253,20 +253,11 @@ function isManagedBlobUrl(url: string): boolean {
 }
 
 async function uploadInvoiceToBlob(pathname: string, file: File): Promise<string> {
-  try {
-    const blob = await put(pathname, file, {
-      access: "public",
-      addRandomSuffix: true,
-    });
-    return blob.url;
-  } catch {
-    // Compatibilidade com stores privadas: tenta com acesso privado.
-    const blob = await put(pathname, file, {
-      access: "private",
-      addRandomSuffix: true,
-    });
-    return blob.url;
-  }
+  const blob = await put(pathname, file, {
+    access: "public",
+    addRandomSuffix: true,
+  });
+  return blob.url;
 }
 
 /** Valor único da cota mensal (igual para todos os meses). */
