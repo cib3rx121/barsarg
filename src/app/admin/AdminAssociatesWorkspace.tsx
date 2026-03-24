@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { balanceToneClass } from "@/lib/balance-display";
 import { MonthYearField } from "@/components/MonthYearField";
 import {
@@ -56,6 +56,11 @@ export function AdminAssociatesWorkspace({
   members: SerializedMember[];
 }) {
   const [openId, setOpenId] = useState<string | null>(null);
+  const [query, setQuery] = useState("");
+  const [balanceFilter, setBalanceFilter] = useState<
+    "all" | "debt" | "credit" | "zero"
+  >("all");
+  const [quickPayMonth, setQuickPayMonth] = useState<string>("");
   const selected = members.find((m) => m.id === openId) ?? null;
 
   const eurFmt = new Intl.NumberFormat("pt-PT", {
@@ -63,6 +68,23 @@ export function AdminAssociatesWorkspace({
     currency: "EUR",
   });
   const currentYear = new Date().getUTCFullYear();
+  const currentMonth = new Date();
+  const currentMonthKey = `${currentMonth.getUTCFullYear()}-${String(
+    currentMonth.getUTCMonth() + 1,
+  ).padStart(2, "0")}`;
+
+  const filteredMembers = useMemo(() => {
+    const q = query.trim().toLowerCase();
+    return members.filter((m) => {
+      const matchesQuery = !q || m.name.toLowerCase().includes(q);
+      const matchesFilter =
+        balanceFilter === "all" ||
+        (balanceFilter === "debt" && m.balanceCents > 0) ||
+        (balanceFilter === "credit" && m.balanceCents < 0) ||
+        (balanceFilter === "zero" && m.balanceCents === 0);
+      return matchesQuery && matchesFilter;
+    });
+  }, [members, query, balanceFilter]);
 
   useEffect(() => {
     if (!openId) return;
@@ -71,6 +93,10 @@ export function AdminAssociatesWorkspace({
     };
     window.addEventListener("keydown", onKey);
     return () => window.removeEventListener("keydown", onKey);
+  }, [openId]);
+
+  useEffect(() => {
+    setQuickPayMonth("");
   }, [openId]);
 
   useEffect(() => {
@@ -146,14 +172,37 @@ export function AdminAssociatesWorkspace({
         </div>
       </form>
 
-      {members.length === 0 ? (
+      <div className="mt-4 grid gap-3 sm:grid-cols-3">
+        <input
+          type="text"
+          value={query}
+          onChange={(e) => setQuery(e.target.value)}
+          className={inpt}
+          placeholder="Pesquisar associado..."
+        />
+        <select
+          value={balanceFilter}
+          onChange={(e) => setBalanceFilter(e.target.value as typeof balanceFilter)}
+          className={inpt}
+        >
+          <option value="all">Todos os saldos</option>
+          <option value="debt">Só em dívida</option>
+          <option value="credit">Só com crédito</option>
+          <option value="zero">Saldo zero</option>
+        </select>
+        <div className="rounded-xl border border-slate-200 bg-slate-50 px-3.5 py-2.5 text-sm text-slate-600 dark:border-slate-700 dark:bg-slate-800/40 dark:text-slate-300">
+          {filteredMembers.length} resultado(s)
+        </div>
+      </div>
+
+      {filteredMembers.length === 0 ? (
         <p className="mt-8 rounded-2xl border border-dashed border-slate-300 bg-slate-50/80 px-5 py-8 text-center text-sm text-slate-600 dark:border-slate-600 dark:bg-slate-800/50 dark:text-slate-400">
-          Ainda não existem associados. Utilize o formulário acima.
+          Sem resultados para os filtros atuais.
         </p>
       ) : (
         <>
           <ul className="mt-6 space-y-2 md:hidden" aria-label="Lista de associados">
-            {members.map((m) => {
+            {filteredMembers.map((m) => {
               const b = m.balanceCents;
               return (
                 <li key={m.id}>
@@ -205,7 +254,7 @@ export function AdminAssociatesWorkspace({
                 </tr>
               </thead>
               <tbody className="divide-y divide-slate-200/80 dark:divide-slate-700/80">
-                {members.map((m) => {
+                {filteredMembers.map((m) => {
                   const b = m.balanceCents;
                   return (
                     <tr
@@ -416,10 +465,46 @@ export function AdminAssociatesWorkspace({
                   <label className="mb-1 block text-sm font-medium text-slate-700 dark:text-slate-300">
                     Mês de referência (opcional)
                   </label>
+                  <div className="mb-2 flex flex-wrap gap-2">
+                    <button
+                      type="button"
+                      className="rounded-lg border border-slate-200 px-2.5 py-1 text-xs font-medium text-slate-600 hover:bg-slate-50 dark:border-slate-600 dark:text-slate-300 dark:hover:bg-slate-800"
+                      onClick={() => setQuickPayMonth(currentMonthKey)}
+                    >
+                      Mês atual
+                    </button>
+                    <button
+                      type="button"
+                      className="rounded-lg border border-slate-200 px-2.5 py-1 text-xs font-medium text-slate-600 hover:bg-slate-50 dark:border-slate-600 dark:text-slate-300 dark:hover:bg-slate-800"
+                      onClick={() => {
+                        const d = new Date();
+                        d.setUTCMonth(d.getUTCMonth() - 1);
+                        setQuickPayMonth(
+                          `${d.getUTCFullYear()}-${String(d.getUTCMonth() + 1).padStart(2, "0")}`,
+                        );
+                      }}
+                    >
+                      Mês anterior
+                    </button>
+                    <button
+                      type="button"
+                      className="rounded-lg border border-slate-200 px-2.5 py-1 text-xs font-medium text-slate-600 hover:bg-slate-50 dark:border-slate-600 dark:text-slate-300 dark:hover:bg-slate-800"
+                      onClick={() => {
+                        const d = new Date();
+                        d.setUTCMonth(d.getUTCMonth() + 1);
+                        setQuickPayMonth(
+                          `${d.getUTCFullYear()}-${String(d.getUTCMonth() + 1).padStart(2, "0")}`,
+                        );
+                      }}
+                    >
+                      Próximo mês
+                    </button>
+                  </div>
                   <MonthYearField
                     idPrefix={`pay-month-${selected.id}`}
                     name="payMonthKey"
                     allowEmpty
+                    defaultValue={quickPayMonth}
                     className={inpt}
                     yearStart={currentYear - 8}
                     yearEnd={currentYear + 4}

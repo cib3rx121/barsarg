@@ -93,6 +93,10 @@ export default async function AdminPage({ searchParams }: AdminPageProps) {
   ]);
 
   const balanceByUser = await computeBalancesForUsers(users);
+  const auditRows = await prisma.auditLog.findMany({
+    orderBy: { createdAt: "desc" },
+    take: 12,
+  });
 
   const publicOrigin = await getPublicOrigin();
   const consultaUrl = `${publicOrigin}/consulta`;
@@ -127,6 +131,12 @@ export default async function AdminPage({ searchParams }: AdminPageProps) {
       createdMonthLabel: formatMonthKeyLongPt(createdMk),
     };
   });
+  const totalMembers = users.length;
+  const debtMembers = serializedMembers.filter((m) => m.balanceCents > 0).length;
+  const creditMembers = serializedMembers.filter((m) => m.balanceCents < 0).length;
+  const totalDebtCents = serializedMembers
+    .filter((m) => m.balanceCents > 0)
+    .reduce((acc, m) => acc + m.balanceCents, 0);
 
   async function logout() {
     "use server";
@@ -196,6 +206,41 @@ export default async function AdminPage({ searchParams }: AdminPageProps) {
             Associados
           </a>
         </nav>
+
+        <section className="admin-panel-section mt-6 grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
+          <div className={`${card} p-4`}>
+            <p className="text-xs uppercase tracking-wide text-slate-500 dark:text-slate-400">
+              Associados
+            </p>
+            <p className="mt-1 text-2xl font-semibold text-slate-900 dark:text-white">
+              {totalMembers}
+            </p>
+          </div>
+          <div className={`${card} p-4`}>
+            <p className="text-xs uppercase tracking-wide text-slate-500 dark:text-slate-400">
+              Com dívida
+            </p>
+            <p className="mt-1 text-2xl font-semibold text-red-600 dark:text-red-400">
+              {debtMembers}
+            </p>
+          </div>
+          <div className={`${card} p-4`}>
+            <p className="text-xs uppercase tracking-wide text-slate-500 dark:text-slate-400">
+              Com crédito
+            </p>
+            <p className="mt-1 text-2xl font-semibold text-emerald-600 dark:text-emerald-400">
+              {creditMembers}
+            </p>
+          </div>
+          <div className={`${card} p-4`}>
+            <p className="text-xs uppercase tracking-wide text-slate-500 dark:text-slate-400">
+              Dívida total
+            </p>
+            <p className="mt-1 text-2xl font-semibold text-slate-900 dark:text-white">
+              {eurFmt.format(totalDebtCents / 100)}
+            </p>
+          </div>
+        </section>
 
         <section
           id="definicoes"
@@ -280,6 +325,9 @@ export default async function AdminPage({ searchParams }: AdminPageProps) {
                 </p>
                 <div className="flex flex-wrap gap-2">
                   <CopyConsultaUrlButton url={consultaUrl} />
+                  <Link href="/admin/export.csv" className={`${btnSecondary} inline-flex text-xs`}>
+                    Exportar CSV
+                  </Link>
                   <a
                     href={consultaQrDataUrl}
                     download="qr-consulta-bar-de-sargentos.png"
@@ -291,6 +339,39 @@ export default async function AdminPage({ searchParams }: AdminPageProps) {
               </div>
             </div>
           </div>
+        </section>
+
+        <section className={`admin-panel-section mt-6 ${card}`}>
+          <h2 className="text-lg font-semibold text-slate-900 dark:text-white">
+            Histórico (audit log)
+          </h2>
+          <p className="mt-2 text-sm text-slate-600 dark:text-slate-400">
+            Últimas ações administrativas registadas no sistema.
+          </p>
+          {auditRows.length === 0 ? (
+            <p className="mt-4 text-sm text-slate-500 dark:text-slate-400">
+              Ainda não existem ações registadas.
+            </p>
+          ) : (
+            <ul className="mt-4 space-y-2">
+              {auditRows.map((row) => (
+                <li
+                  key={row.id}
+                  className="rounded-xl border border-slate-200/80 bg-slate-50/60 px-3 py-2 text-sm dark:border-slate-700/80 dark:bg-slate-800/40"
+                >
+                  <p className="font-medium text-slate-800 dark:text-slate-100">
+                    {row.action} · {row.entity}
+                  </p>
+                  {row.note ? (
+                    <p className="text-slate-600 dark:text-slate-400">{row.note}</p>
+                  ) : null}
+                  <p className="text-xs text-slate-500 dark:text-slate-500">
+                    {dateTimeFmt.format(row.createdAt)}
+                  </p>
+                </li>
+              ))}
+            </ul>
+          )}
         </section>
 
         <section className={`admin-panel-section mt-6 grid gap-6 lg:grid-cols-2`}>

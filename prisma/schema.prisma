@@ -64,3 +64,15 @@ model LedgerEntry {
 
   @@index([userId, createdAt])
 }
+
+model AuditLog {
+  id        String   @id @default(uuid()) @db.Uuid
+  actor     String
+  action    String
+  entity    String
+  entityId  String?
+  note      String?
+  createdAt DateTime @default(now())
+
+  @@index([createdAt])
+}

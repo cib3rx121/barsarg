@@ -22,6 +22,23 @@ async function assertAdmin() {
   }
 }
 
+async function logAdminEvent(input: {
+  action: string;
+  entity: string;
+  entityId?: string;
+  note?: string;
+}) {
+  await prisma.auditLog.create({
+    data: {
+      actor: "admin",
+      action: input.action,
+      entity: input.entity,
+      entityId: input.entityId ?? null,
+      note: input.note ?? null,
+    },
+  });
+}
+
 /** Aceita AAAA-MM (preferido) ou AAAA-MM-DD (legado). Mês civil = dia 1 UTC. */
 function parseEntryDateFromForm(raw: string): Date | null {
   const t = raw.trim();
@@ -84,6 +101,12 @@ export async function createUser(formData: FormData) {
   });
 
   await reconcileUserCharges(user.id);
+  await logAdminEvent({
+    action: "CREATE",
+    entity: "USER",
+    entityId: user.id,
+    note: `Novo associado: ${name}`,
+  });
 
   revalidatePath("/admin");
   redirect("/admin");
@@ -126,6 +149,12 @@ export async function updateMember(formData: FormData) {
   });
 
   await reconcileUserCharges(userId);
+  await logAdminEvent({
+    action: "UPDATE",
+    entity: "USER",
+    entityId: userId,
+    note: `Atualização de dados: ${name}`,
+  });
 
   revalidatePath("/admin");
   revalidatePath("/consulta");
@@ -143,6 +172,12 @@ export async function deleteMember(formData: FormData) {
   }
 
   await prisma.user.delete({ where: { id: userId } });
+  await logAdminEvent({
+    action: "DELETE",
+    entity: "USER",
+    entityId: userId,
+    note: "Associado eliminado",
+  });
 
   revalidatePath("/admin");
   revalidatePath("/consulta");
@@ -181,6 +216,12 @@ export async function waiveMonthRange(formData: FormData) {
   }
 
   await reconcileUserCharges(userId);
+  await logAdminEvent({
+    action: "UPDATE",
+    entity: "WAIVER",
+    entityId: userId,
+    note: `Isenção aplicada: ${from} até ${to}`,
+  });
 
   revalidatePath("/admin");
   revalidatePath("/consulta");
@@ -214,6 +255,12 @@ export async function saveGlobalQuota(formData: FormData) {
   });
 
   await backfillMissingMonthlyCharges();
+  await logAdminEvent({
+    action: "UPDATE",
+    entity: "QUOTA",
+    entityId: QUOTA_SETTINGS_ID,
+    note: `Cota mensal atualizada para ${(amountCents / 100).toFixed(2)} EUR`,
+  });
 
   revalidatePath("/admin");
   revalidatePath("/consulta");
@@ -242,6 +289,12 @@ export async function recordDebtAdjustment(formData: FormData) {
       monthKey: null,
       note: noteRaw ? noteRaw : "Dívida manual",
     },
+  });
+  await logAdminEvent({
+    action: "CREATE",
+    entity: "LEDGER_ADJUSTMENT",
+    entityId: userId,
+    note: `Dívida manual: ${(amountCents / 100).toFixed(2)} EUR`,
   });
 
   revalidatePath("/admin");
@@ -277,6 +330,12 @@ export async function recordPayment(formData: FormData) {
       note: noteRaw ? noteRaw : null,
     },
   });
+  await logAdminEvent({
+    action: "CREATE",
+    entity: "LEDGER_PAYMENT",
+    entityId: userId,
+    note: `Pagamento: ${(amountCents / 100).toFixed(2)} EUR${monthKey ? ` (${monthKey})` : ""}`,
+  });
 
   revalidatePath("/admin");
   revalidatePath("/consulta");
@@ -311,6 +370,12 @@ export async function updateAdminCredentials(formData: FormData) {
       adminPasswordHash: hashSecret(newPassword),
     },
   });
+  await logAdminEvent({
+    action: "UPDATE",
+    entity: "ADMIN_CREDENTIALS",
+    entityId: QUOTA_SETTINGS_ID,
+    note: `Credenciais admin atualizadas para utilizador ${newUsername}`,
+  });
 
   revalidatePath("/admin");
   redirect("/admin");
@@ -335,6 +400,12 @@ export async function updateConsultaPin(formData: FormData) {
       consultaPinHash: hashSecret(pin),
     },
   });
+  await logAdminEvent({
+    action: "UPDATE",
+    entity: "CONSULT_PIN",
+    entityId: QUOTA_SETTINGS_ID,
+    note: "PIN da consulta pública atualizado",
+  });
 
   revalidatePath("/admin");
   revalidatePath("/consulta");
@@ -354,6 +425,12 @@ export async function updatePublicNotice(formData: FormData) {
     data: {
       publicNotice: note ? note : null,
     },
+  });
+  await logAdminEvent({
+    action: "UPDATE",
+    entity: "PUBLIC_NOTICE",
+    entityId: QUOTA_SETTINGS_ID,
+    note: note ? "Aviso público atualizado" : "Aviso público removido",
   });
 
   revalidatePath("/admin");

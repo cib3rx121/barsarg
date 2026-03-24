@@ -28,6 +28,16 @@ const card =
 const btnOutline =
   "touch-target inline-flex min-h-12 items-center justify-center rounded-xl border border-slate-200 bg-white px-4 py-2.5 text-sm font-semibold text-slate-800 transition hover:bg-slate-50 dark:border-slate-600 dark:bg-slate-800 dark:text-slate-100";
 
+function ledgerKindBadge(kind: string) {
+  if (kind === "CHARGE_MONTH") {
+    return "bg-red-100 text-red-700 dark:bg-red-950/40 dark:text-red-300";
+  }
+  if (kind === "PAYMENT") {
+    return "bg-emerald-100 text-emerald-700 dark:bg-emerald-950/40 dark:text-emerald-300";
+  }
+  return "bg-amber-100 text-amber-800 dark:bg-amber-950/40 dark:text-amber-300";
+}
+
 type PageProps = {
   params: Promise<{ userId: string }>;
 };
@@ -124,7 +134,11 @@ export default async function ConsultaUserDetailPage({ params }: PageProps) {
                     </p>
                   </div>
                   <p className="mt-2 font-medium text-slate-800 dark:text-slate-200">
-                    {ledgerKindLabel(row.kind)}
+                    <span
+                      className={`inline-flex rounded-full px-2 py-0.5 text-xs font-semibold ${ledgerKindBadge(row.kind)}`}
+                    >
+                      {ledgerKindLabel(row.kind)}
+                    </span>
                     {row.deltaCents > 0 ? (
                       <span className="ml-1.5 text-xs font-normal text-red-600 dark:text-red-400">
                         (aumenta dívida)
@@ -165,7 +179,13 @@ export default async function ConsultaUserDetailPage({ params }: PageProps) {
                       <td className="px-4 py-3 tabular-nums text-slate-600 dark:text-slate-400">
                         {dateTimeFmt.format(row.createdAt)}
                       </td>
-                      <td className="px-4 py-3">{ledgerKindLabel(row.kind)}</td>
+                      <td className="px-4 py-3">
+                        <span
+                          className={`inline-flex rounded-full px-2 py-0.5 text-xs font-semibold ${ledgerKindBadge(row.kind)}`}
+                        >
+                          {ledgerKindLabel(row.kind)}
+                        </span>
+                      </td>
                       <td className="px-4 py-3 font-mono tabular-nums">
                         {row.monthKey ?? "—"}
                       </td>
