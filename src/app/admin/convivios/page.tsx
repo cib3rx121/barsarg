@@ -6,6 +6,7 @@ import {
   deleteEvent,
   reopenEventRegistrations,
   saveEventCosts,
+  updateEventParticipantAdmin,
 } from "@/app/admin/actions";
 import { requireAdminSession } from "@/lib/auth-admin";
 import { computeEventSplit, splitProfileLabel } from "@/lib/events";
@@ -110,6 +111,7 @@ export default async function ConviviosAdminPage() {
             </div>
           ) : (
             events.map((event) => {
+              const yesCount = event.participants.filter((p) => p.status === "YES").length;
               const split = computeEventSplit({
                 participants: event.participants.map((p) => ({
                   userId: p.userId,
@@ -188,6 +190,37 @@ export default async function ConviviosAdminPage() {
                     </form>
                   </div>
 
+                  <div className="mt-3 grid gap-3 rounded-xl border border-slate-200/80 bg-slate-50/60 p-3 sm:grid-cols-3 dark:border-slate-700/80 dark:bg-slate-800/35">
+                    <div>
+                      <p className="text-xs uppercase tracking-wide text-slate-500 dark:text-slate-400">
+                        Inscritos (YES)
+                      </p>
+                      <p className="text-lg font-semibold text-slate-900 dark:text-slate-100">
+                        {yesCount}
+                      </p>
+                    </div>
+                    <div>
+                      <p className="text-xs uppercase tracking-wide text-slate-500 dark:text-slate-400">
+                        Total custos
+                      </p>
+                      <p className="text-lg font-semibold text-slate-900 dark:text-slate-100">
+                        {eurFmt.format((event.foodCents + event.drinkCents + event.otherCents) / 100)}
+                      </p>
+                    </div>
+                    <div>
+                      <p className="text-xs uppercase tracking-wide text-slate-500 dark:text-slate-400">
+                        Valor médio / inscrito
+                      </p>
+                      <p className="text-lg font-semibold text-slate-900 dark:text-slate-100">
+                        {yesCount > 0
+                          ? eurFmt.format(
+                              (event.foodCents + event.drinkCents + event.otherCents) / yesCount / 100,
+                            )
+                          : "—"}
+                      </p>
+                    </div>
+                  </div>
+
                   <details className="mt-4 rounded-xl border border-red-200/80 bg-red-50/70 p-3 dark:border-red-900/40 dark:bg-red-950/20">
                     <summary className="cursor-pointer text-sm font-semibold text-red-800 dark:text-red-200">
                       Zona de risco: eliminar convívio
@@ -219,6 +252,7 @@ export default async function ConviviosAdminPage() {
                           <th className="px-3 py-2 font-semibold">Associado</th>
                           <th className="px-3 py-2 font-semibold">Participa</th>
                           <th className="px-3 py-2 font-semibold">Perfil</th>
+                          <th className="px-3 py-2 font-semibold">Editar inscrição</th>
                           <th className="px-3 py-2 font-semibold">Valor previsto</th>
                         </tr>
                       </thead>
@@ -228,6 +262,35 @@ export default async function ConviviosAdminPage() {
                             <td className="px-3 py-2">{p.user.name}</td>
                             <td className="px-3 py-2">{p.status === "YES" ? "Sim" : "Não"}</td>
                             <td className="px-3 py-2">{splitProfileLabel(p.splitProfile)}</td>
+                            <td className="px-3 py-2">
+                              <form action={updateEventParticipantAdmin} className="flex flex-wrap items-center gap-1.5">
+                                <input type="hidden" name="eventId" value={event.id} />
+                                <input type="hidden" name="userId" value={p.userId} />
+                                <select
+                                  name="status"
+                                  defaultValue={p.status}
+                                  className="rounded-lg border border-slate-200 bg-white px-2 py-1 text-xs dark:border-slate-600 dark:bg-slate-900/40"
+                                >
+                                  <option value="YES">Sim</option>
+                                  <option value="NO">Não</option>
+                                </select>
+                                <select
+                                  name="splitProfile"
+                                  defaultValue={p.splitProfile}
+                                  className="rounded-lg border border-slate-200 bg-white px-2 py-1 text-xs dark:border-slate-600 dark:bg-slate-900/40"
+                                >
+                                  <option value="ALL">Tudo</option>
+                                  <option value="FOOD_ONLY">Só comida</option>
+                                  <option value="NO_DRINK">Sem bebida</option>
+                                </select>
+                                <button
+                                  type="submit"
+                                  className="rounded-lg border border-emerald-300 bg-emerald-50 px-2 py-1 text-xs font-semibold text-emerald-800 hover:bg-emerald-100 dark:border-emerald-900/50 dark:bg-emerald-950/30 dark:text-emerald-200 dark:hover:bg-emerald-900/40"
+                                >
+                                  Guardar
+                                </button>
+                              </form>
+                            </td>
                             <td className="px-3 py-2 tabular-nums">
                               {eurFmt.format((split.get(p.userId) ?? 0) / 100)}
                             </td>

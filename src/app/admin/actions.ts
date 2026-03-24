@@ -640,7 +640,7 @@ export async function createEvent(formData: FormData) {
       data: users.map((u) => ({
         eventId: event.id,
         userId: u.id,
-        status: "NO",
+        status: "YES",
         splitProfile: "ALL",
       })),
     });
@@ -745,6 +745,39 @@ export async function deleteEvent(formData: FormData) {
     entity: "EVENT",
     entityId: eventId,
     note: `Convívio eliminado: ${event?.title ?? eventId}`,
+  });
+
+  revalidatePath("/admin/convivios");
+  revalidatePath("/consulta");
+  redirect("/admin/convivios");
+}
+
+export async function updateEventParticipantAdmin(formData: FormData) {
+  await assertAdmin();
+  const eventId = String(formData.get("eventId") ?? "").trim();
+  const userId = String(formData.get("userId") ?? "").trim();
+  const status = String(formData.get("status") ?? "").trim();
+  const splitProfile = String(formData.get("splitProfile") ?? "").trim();
+  if (!eventId || !userId) {
+    redirect("/admin/convivios?error=7");
+  }
+
+  const normalizedStatus = status === "NO" ? "NO" : "YES";
+  const normalizedProfile =
+    splitProfile === "FOOD_ONLY" || splitProfile === "NO_DRINK" ? splitProfile : "ALL";
+
+  await prisma.eventParticipant.upsert({
+    where: { eventId_userId: { eventId, userId } },
+    create: {
+      eventId,
+      userId,
+      status: normalizedStatus,
+      splitProfile: normalizedProfile,
+    },
+    update: {
+      status: normalizedStatus,
+      splitProfile: normalizedProfile,
+    },
   });
 
   revalidatePath("/admin/convivios");
