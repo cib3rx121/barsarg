@@ -11,6 +11,7 @@ import {
   monthKeyFromUtcDate,
 } from "@/lib/month-keys";
 import { PublicShell } from "@/components/PublicShell";
+import { getQuotaSettingsRow, verifyConsultaPin } from "@/lib/app-settings";
 import { prisma } from "@/lib/prisma";
 
 type ConsultaPageProps = {
@@ -53,9 +54,8 @@ export default async function ConsultaPage({ searchParams }: ConsultaPageProps) 
     "use server";
 
     const pin = String(formData.get("pin") ?? "");
-    const envPin = process.env.PUBLIC_CONSULT_PIN ?? "";
-
-    if (!pin || pin !== envPin) {
+    const ok = pin ? await verifyConsultaPin(pin) : false;
+    if (!ok) {
       redirect("/consulta?error=1");
     }
 
@@ -128,6 +128,7 @@ export default async function ConsultaPage({ searchParams }: ConsultaPageProps) 
   }
 
   await backfillMissingMonthlyCharges();
+  const settingsRow = await getQuotaSettingsRow();
 
   const users = await prisma.user.findMany({
     where: { active: true },
@@ -148,6 +149,23 @@ export default async function ConsultaPage({ searchParams }: ConsultaPageProps) 
         <p className="mt-2 text-sm text-slate-600 dark:text-slate-400">
           Associados ativos e saldo. Clique no nome para o detalhe.
         </p>
+        {settingsRow?.amountCents && settingsRow.amountCents > 0 ? (
+          <p className="mt-2 text-sm text-slate-600 dark:text-slate-400">
+            Cota atual:{" "}
+            <span className="font-semibold text-slate-900 dark:text-slate-100">
+              {eurFmt.format(settingsRow.amountCents / 100)}
+            </span>{" "}
+            / mês
+          </p>
+        ) : null}
+        {settingsRow?.publicNotice ? (
+          <div className="mt-4 rounded-xl border border-amber-200/80 bg-amber-50 px-4 py-3 text-sm text-amber-900 dark:border-amber-900/50 dark:bg-amber-950/25 dark:text-amber-100">
+            <p className="text-xs font-semibold uppercase tracking-wide text-amber-800 dark:text-amber-300">
+              Aviso da administração
+            </p>
+            <p className="mt-1 whitespace-pre-wrap">{settingsRow.publicNotice}</p>
+          </div>
+        ) : null}
 
         <div className="mt-6 flex flex-col gap-2 sm:flex-row sm:flex-wrap sm:gap-3">
           <Link href="/" className={`${btnOutline} w-full sm:w-auto`}>

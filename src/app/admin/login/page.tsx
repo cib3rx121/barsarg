@@ -1,6 +1,7 @@
 import { cookies } from "next/headers";
 import { redirect } from "next/navigation";
 import { BrandLogo, hasBrandLogo } from "@/components/BrandLogo";
+import { resolveAdminUsername, verifyAdminPassword } from "@/lib/app-settings";
 
 type LoginPageProps = {
   searchParams: Promise<{
@@ -18,10 +19,10 @@ export default async function AdminLoginPage({ searchParams }: LoginPageProps) {
     const username = String(formData.get("username") ?? "");
     const password = String(formData.get("password") ?? "");
 
-    const envUser = process.env.ADMIN_USERNAME ?? "";
-    const envPassword = process.env.ADMIN_PASSWORD ?? "";
+    const expectedUser = await resolveAdminUsername();
+    const passwordOk = await verifyAdminPassword(password);
 
-    if (username !== envUser || password !== envPassword) {
+    if (username !== expectedUser || !passwordOk) {
       redirect("/admin/login?error=1");
     }
 

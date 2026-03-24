@@ -2,7 +2,12 @@ import Image from "next/image";
 import Link from "next/link";
 import { cookies } from "next/headers";
 import { redirect } from "next/navigation";
-import { saveGlobalQuota } from "./actions";
+import {
+  saveGlobalQuota,
+  updateAdminCredentials,
+  updateConsultaPin,
+  updatePublicNotice,
+} from "./actions";
 import { AdminAssociatesWorkspace } from "./AdminAssociatesWorkspace";
 import {
   backfillMissingMonthlyCharges,
@@ -74,6 +79,9 @@ export default async function AdminPage({ searchParams }: AdminPageProps) {
       ? "Indique um valor válido (EUR) e, se usar mês, o formato AAAA-MM."
       : null;
   const hasDebtFormError = billingErr === "10";
+  const hasAdminCredsError = billingErr === "11";
+  const hasConsultaPinError = billingErr === "12";
+  const hasPublicNoticeError = billingErr === "13";
 
   const [users, quotaRow] = await Promise.all([
     prisma.user.findMany({
@@ -282,6 +290,158 @@ export default async function AdminPage({ searchParams }: AdminPageProps) {
                 </div>
               </div>
             </div>
+          </div>
+        </section>
+
+        <section className={`admin-panel-section mt-6 grid gap-6 lg:grid-cols-2`}>
+          <div className={card}>
+            <h2 className="text-lg font-semibold text-slate-900 dark:text-white">
+              Segurança de acesso
+            </h2>
+            <p className="mt-2 text-sm text-slate-600 dark:text-slate-400">
+              Atualize credenciais do admin e PIN da consulta pública.
+            </p>
+
+            {hasAdminCredsError ? (
+              <p className="mt-4 rounded-lg border border-red-200 bg-red-50 px-3 py-2 text-sm text-red-800 dark:border-red-900/50 dark:bg-red-950/35 dark:text-red-200">
+                Credenciais inválidas. Confirme a palavra-passe atual e os novos dados.
+              </p>
+            ) : null}
+            <form action={updateAdminCredentials} className="mt-4 space-y-3">
+              <p className="text-xs font-semibold uppercase tracking-wide text-slate-500 dark:text-slate-400">
+                Alterar login admin
+              </p>
+              <div>
+                <label className="mb-1 block text-sm font-medium text-slate-700 dark:text-slate-300">
+                  Utilizador atual em vigor
+                </label>
+                <input
+                  type="text"
+                  value={quotaRow?.adminUsername ?? process.env.ADMIN_USERNAME ?? ""}
+                  readOnly
+                  className={`${inpt} cursor-not-allowed bg-slate-100/90 dark:bg-slate-800/80`}
+                />
+              </div>
+              <div>
+                <label className="mb-1 block text-sm font-medium text-slate-700 dark:text-slate-300">
+                  Palavra-passe atual
+                </label>
+                <input name="currentPassword" type="password" required className={inpt} />
+              </div>
+              <div>
+                <label className="mb-1 block text-sm font-medium text-slate-700 dark:text-slate-300">
+                  Novo utilizador
+                </label>
+                <input
+                  name="newUsername"
+                  type="text"
+                  required
+                  defaultValue={quotaRow?.adminUsername ?? process.env.ADMIN_USERNAME ?? ""}
+                  className={inpt}
+                />
+              </div>
+              <div className="grid gap-3 sm:grid-cols-2">
+                <div>
+                  <label className="mb-1 block text-sm font-medium text-slate-700 dark:text-slate-300">
+                    Nova palavra-passe
+                  </label>
+                  <input
+                    name="newPassword"
+                    type="password"
+                    minLength={6}
+                    required
+                    className={inpt}
+                  />
+                </div>
+                <div>
+                  <label className="mb-1 block text-sm font-medium text-slate-700 dark:text-slate-300">
+                    Confirmar palavra-passe
+                  </label>
+                  <input
+                    name="confirmPassword"
+                    type="password"
+                    minLength={6}
+                    required
+                    className={inpt}
+                  />
+                </div>
+              </div>
+              <button type="submit" className={btnPrimary}>
+                Guardar credenciais
+              </button>
+            </form>
+
+            {hasConsultaPinError ? (
+              <p className="mt-5 rounded-lg border border-red-200 bg-red-50 px-3 py-2 text-sm text-red-800 dark:border-red-900/50 dark:bg-red-950/35 dark:text-red-200">
+                PIN inválido. Use apenas números (4 a 10 dígitos) e confirme corretamente.
+              </p>
+            ) : null}
+            <form action={updateConsultaPin} className="mt-4 space-y-3">
+              <p className="text-xs font-semibold uppercase tracking-wide text-slate-500 dark:text-slate-400">
+                Alterar PIN da consulta pública
+              </p>
+              <div className="grid gap-3 sm:grid-cols-2">
+                <div>
+                  <label className="mb-1 block text-sm font-medium text-slate-700 dark:text-slate-300">
+                    Novo PIN
+                  </label>
+                  <input
+                    name="consultaPin"
+                    type="password"
+                    inputMode="numeric"
+                    required
+                    className={inpt}
+                  />
+                </div>
+                <div>
+                  <label className="mb-1 block text-sm font-medium text-slate-700 dark:text-slate-300">
+                    Confirmar PIN
+                  </label>
+                  <input
+                    name="confirmConsultaPin"
+                    type="password"
+                    inputMode="numeric"
+                    required
+                    className={inpt}
+                  />
+                </div>
+              </div>
+              <button type="submit" className={btnSecondary}>
+                Guardar PIN
+              </button>
+            </form>
+          </div>
+
+          <div className={card}>
+            <h2 className="text-lg font-semibold text-slate-900 dark:text-white">
+              Aviso público
+            </h2>
+            <p className="mt-2 text-sm text-slate-600 dark:text-slate-400">
+              Mensagem exibida na página pública da consulta para todos os utilizadores.
+            </p>
+            {hasPublicNoticeError ? (
+              <p className="mt-4 rounded-lg border border-red-200 bg-red-50 px-3 py-2 text-sm text-red-800 dark:border-red-900/50 dark:bg-red-950/35 dark:text-red-200">
+                O aviso é demasiado longo (máx. 1000 caracteres).
+              </p>
+            ) : null}
+            <form action={updatePublicNotice} className="mt-4 space-y-3">
+              <div>
+                <label className="mb-1 block text-sm font-medium text-slate-700 dark:text-slate-300">
+                  Texto do aviso
+                </label>
+                <textarea
+                  name="publicNotice"
+                  defaultValue={quotaRow?.publicNotice ?? ""}
+                  rows={7}
+                  maxLength={1000}
+                  className={`${inpt} min-h-[9rem] resize-y`}
+                  placeholder="Ex.: Fecho do bar no feriado de 25 de Abril."
+                />
+              </div>
+              <button type="submit" className={btnPrimary}>
+                Guardar aviso
+              </button>
+            </form>
           </div>
         </section>
 

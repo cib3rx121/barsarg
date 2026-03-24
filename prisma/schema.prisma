@@ -41,9 +41,13 @@ model WaivedMonth {
 
 /// Um único registo (id = "default"): valor mensal igual para todos os meses.
 model QuotaSettings {
-  id          String   @id
-  amountCents Int
-  updatedAt   DateTime @updatedAt
+  id                String   @id
+  amountCents       Int
+  adminUsername     String?
+  adminPasswordHash String?
+  consultaPinHash   String?
+  publicNotice      String?
+  updatedAt         DateTime @updatedAt
 }
 
 /// Saldo do utilizador = soma(deltaCents). Positivo = deve ao bar; negativo = crédito.

@@ -9,9 +9,11 @@ import {
   monthKeysInclusive,
   parseMonthKey,
 } from "@/lib/month-keys";
+import { ensureQuotaSettingsExists, verifyAdminPassword } from "@/lib/app-settings";
 import { backfillMissingMonthlyCharges, reconcileUserCharges } from "@/lib/balance";
 import { prisma } from "@/lib/prisma";
 import { QUOTA_SETTINGS_ID } from "@/lib/quota";
+import { hashSecret } from "@/lib/secret-hash";
 
 async function assertAdmin() {
   const session = (await cookies()).get("barsarg_admin_session")?.value;
@@ -273,6 +275,84 @@ export async function recordPayment(formData: FormData) {
       kind: "PAYMENT",
       monthKey: monthKey ?? null,
       note: noteRaw ? noteRaw : null,
+    },
+  });
+
+  revalidatePath("/admin");
+  revalidatePath("/consulta");
+  redirect("/admin");
+}
+
+export async function updateAdminCredentials(formData: FormData) {
+  await assertAdmin();
+
+  const currentPassword = String(formData.get("currentPassword") ?? "").trim();
+  const newUsername = String(formData.get("newUsername") ?? "").trim();
+  const newPassword = String(formData.get("newPassword") ?? "").trim();
+  const confirmPassword = String(formData.get("confirmPassword") ?? "").trim();
+
+  if (!currentPassword || !newUsername || !newPassword || !confirmPassword) {
+    redirect("/admin?error=11");
+  }
+  if (newPassword.length < 6 || newPassword !== confirmPassword) {
+    redirect("/admin?error=11");
+  }
+
+  const currentOk = await verifyAdminPassword(currentPassword);
+  if (!currentOk) {
+    redirect("/admin?error=11");
+  }
+
+  await ensureQuotaSettingsExists();
+  await prisma.quotaSettings.update({
+    where: { id: QUOTA_SETTINGS_ID },
+    data: {
+      adminUsername: newUsername,
+      adminPasswordHash: hashSecret(newPassword),
+    },
+  });
+
+  revalidatePath("/admin");
+  redirect("/admin");
+}
+
+export async function updateConsultaPin(formData: FormData) {
+  await assertAdmin();
+
+  const pin = String(formData.get("consultaPin") ?? "").trim();
+  const confirmPin = String(formData.get("confirmConsultaPin") ?? "").trim();
+  if (!pin || !confirmPin || pin !== confirmPin) {
+    redirect("/admin?error=12");
+  }
+  if (!/^\d{4,10}$/.test(pin)) {
+    redirect("/admin?error=12");
+  }
+
+  await ensureQuotaSettingsExists();
+  await prisma.quotaSettings.update({
+    where: { id: QUOTA_SETTINGS_ID },
+    data: {
+      consultaPinHash: hashSecret(pin),
+    },
+  });
+
+  revalidatePath("/admin");
+  revalidatePath("/consulta");
+  redirect("/admin");
+}
+
+export async function updatePublicNotice(formData: FormData) {
+  await assertAdmin();
+  const note = String(formData.get("publicNotice") ?? "").trim();
+  if (note.length > 1000) {
+    redirect("/admin?error=13");
+  }
+
+  await ensureQuotaSettingsExists();
+  await prisma.quotaSettings.update({
+    where: { id: QUOTA_SETTINGS_ID },
+    data: {
+      publicNotice: note ? note : null,
     },
   });
 
