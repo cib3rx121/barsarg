@@ -70,9 +70,10 @@ export function DayMonthYearField({
   }, [startYear, endYear]);
 
   const parsedDefault = parseDateKey(defaultValue);
-  const [year, setYear] = useState(parsedDefault.year || current.year);
-  const [month, setMonth] = useState(parsedDefault.month || current.month);
-  const [day, setDay] = useState(parsedDefault.day || current.day);
+  const hasDefault = Boolean(parsedDefault.year && parsedDefault.month && parsedDefault.day);
+  const [year, setYear] = useState(hasDefault ? parsedDefault.year : "");
+  const [month, setMonth] = useState(hasDefault ? parsedDefault.month : "");
+  const [day, setDay] = useState(hasDefault ? parsedDefault.day : "");
 
   const maxDays = daysInMonth(year, month);
   const dayOptions = useMemo(
@@ -94,6 +95,7 @@ export function DayMonthYearField({
           onChange={(e) => setDay(e.target.value)}
           required={required}
         >
+          <option value="">Dia</option>
           {dayOptions.map((d) => (
             <option key={d} value={d}>
               {d}
@@ -107,6 +109,7 @@ export function DayMonthYearField({
           onChange={(e) => setMonth(e.target.value)}
           required={required}
         >
+          <option value="">Mês</option>
           {MONTH_OPTIONS.map((opt) => (
             <option key={opt.value} value={opt.value}>
               {opt.label}
@@ -120,6 +123,7 @@ export function DayMonthYearField({
           onChange={(e) => setYear(e.target.value)}
           required={required}
         >
+          <option value="">Ano</option>
           {years.map((y) => (
             <option key={y} value={y}>
               {y}
@@ -140,7 +144,7 @@ export function DayMonthYearField({
           Hoje
         </button>
         <span className="ml-auto rounded-md bg-slate-100 px-2 py-1 text-[11px] font-medium text-slate-600 dark:bg-slate-800 dark:text-slate-300">
-          {safeDay}/{month}/{year}
+          {hiddenValue ? `${safeDay}/${month}/${year}` : "Sem data selecionada"}
         </span>
       </div>
     </div>

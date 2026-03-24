@@ -32,9 +32,22 @@ const btnPrimary =
 const btnSecondary =
   "touch-target inline-flex min-h-12 items-center justify-center rounded-xl border border-slate-200 bg-white px-4 py-2.5 text-sm font-semibold text-slate-800 transition hover:bg-slate-50 dark:border-slate-600 dark:bg-slate-800 dark:text-slate-100";
 
-export default async function ConviviosAdminPage() {
+type ConviviosPageProps = {
+  searchParams?: Promise<{ error?: string }>;
+};
+
+export default async function ConviviosAdminPage({ searchParams }: ConviviosPageProps) {
   await requireAdminSession();
+  const params = searchParams ? await searchParams : {};
+  const error = params.error ?? "";
   const currentYear = new Date().getUTCFullYear();
+  const createEventError = error === "1";
+  const saveCostsError = error === "2";
+  const closeError = error === "3";
+  const settlementError = error === "4";
+  const reopenError = error === "5";
+  const deleteError = error === "6";
+  const participantError = error === "7";
 
   const [usersCount, settledCount] = await Promise.all([
     prisma.user.count({ where: { active: true } }),
@@ -77,6 +90,11 @@ export default async function ConviviosAdminPage() {
           <h2 className="text-lg font-semibold text-slate-900 dark:text-white">
             Novo convívio
           </h2>
+          {createEventError ? (
+            <p className="mt-3 rounded-lg border border-red-200 bg-red-50 px-3 py-2 text-sm text-red-800 dark:border-red-900/50 dark:bg-red-950/35 dark:text-red-200">
+              Não foi possível criar o convívio. Confirma o título e a data.
+            </p>
+          ) : null}
           <form action={createEvent} className="mt-4 grid gap-3">
             <input name="eventTitle" required placeholder="Título (ex.: Jantar de sexta)" className={inpt} />
             <div>
@@ -105,6 +123,36 @@ export default async function ConviviosAdminPage() {
         </section>
 
         <section className="mt-6 space-y-4">
+          {saveCostsError ? (
+            <p className="rounded-lg border border-red-200 bg-red-50 px-3 py-2 text-sm text-red-800 dark:border-red-900/50 dark:bg-red-950/35 dark:text-red-200">
+              Não foi possível guardar custos. Confirma os valores em EUR.
+            </p>
+          ) : null}
+          {closeError ? (
+            <p className="rounded-lg border border-red-200 bg-red-50 px-3 py-2 text-sm text-red-800 dark:border-red-900/50 dark:bg-red-950/35 dark:text-red-200">
+              Não foi possível encerrar inscrições. Tenta novamente.
+            </p>
+          ) : null}
+          {reopenError ? (
+            <p className="rounded-lg border border-red-200 bg-red-50 px-3 py-2 text-sm text-red-800 dark:border-red-900/50 dark:bg-red-950/35 dark:text-red-200">
+              Não foi possível reabrir inscrições. Tenta novamente.
+            </p>
+          ) : null}
+          {deleteError ? (
+            <p className="rounded-lg border border-red-200 bg-red-50 px-3 py-2 text-sm text-red-800 dark:border-red-900/50 dark:bg-red-950/35 dark:text-red-200">
+              Não foi possível eliminar o convívio. Escreve APAGAR para confirmar.
+            </p>
+          ) : null}
+          {participantError ? (
+            <p className="rounded-lg border border-red-200 bg-red-50 px-3 py-2 text-sm text-red-800 dark:border-red-900/50 dark:bg-red-950/35 dark:text-red-200">
+              Não foi possível atualizar a inscrição de participante.
+            </p>
+          ) : null}
+          {settlementError ? (
+            <p className="rounded-lg border border-red-200 bg-red-50 px-3 py-2 text-sm text-red-800 dark:border-red-900/50 dark:bg-red-950/35 dark:text-red-200">
+              Liquidação indisponível. Verifica se há inscritos e se ainda não foi liquidado.
+            </p>
+          ) : null}
           {events.length === 0 ? (
             <div className={card}>
               <p className="text-sm text-slate-500 dark:text-slate-400">Sem convívios criados.</p>

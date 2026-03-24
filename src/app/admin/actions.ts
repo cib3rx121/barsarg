@@ -619,7 +619,12 @@ export async function createEvent(formData: FormData) {
   }
   const [y, m, d] = parts;
   const eventDate = new Date(Date.UTC(y, m - 1, d));
-  if (Number.isNaN(eventDate.getTime())) {
+  if (
+    Number.isNaN(eventDate.getTime()) ||
+    eventDate.getUTCFullYear() !== y ||
+    eventDate.getUTCMonth() + 1 !== m ||
+    eventDate.getUTCDate() !== d
+  ) {
     redirect("/admin/convivios?error=1");
   }
 
