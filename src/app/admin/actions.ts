@@ -973,7 +973,8 @@ export async function applyEventSettlement(formData: FormData) {
   });
 
   revalidatePath("/admin/convivios");
+  revalidatePath(`/admin/convivios/${eventId}/resumo`);
   revalidatePath("/admin");
   revalidatePath("/consulta");
-  redirect("/admin/convivios");
+  redirect(`/admin/convivios/${eventId}/resumo`);
 }

@@ -231,6 +231,17 @@ export default async function ConviviosAdminPage({ searchParams }: ConviviosPage
                     </div>
                   </div>
 
+                  {event.status === "SETTLED" ? (
+                    <div className="mt-3">
+                      <Link
+                        href={`/admin/convivios/${event.id}/resumo`}
+                        className={`${btnSecondary} inline-flex`}
+                      >
+                        Ver resumo para partilhar
+                      </Link>
+                    </div>
+                  ) : null}
+
                   <details className="mt-4 rounded-xl border border-slate-200/80 bg-slate-50/70 p-3 md:hidden dark:border-slate-700/80 dark:bg-slate-800/35">
                     <summary className="cursor-pointer text-sm font-semibold text-slate-800 dark:text-slate-100">
                       Custos e ações
