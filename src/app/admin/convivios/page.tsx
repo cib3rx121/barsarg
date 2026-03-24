@@ -150,7 +150,7 @@ export default async function ConviviosAdminPage({ searchParams }: ConviviosPage
           ) : null}
           {settlementError ? (
             <p className="rounded-lg border border-red-200 bg-red-50 px-3 py-2 text-sm text-red-800 dark:border-red-900/50 dark:bg-red-950/35 dark:text-red-200">
-              Não foi possível fechar contas. Verifica se há custos > 0, inscritos com “Sim” e se ainda não foi fechado.
+              Não foi possível fechar contas. Verifica se há custos superiores a zero, inscritos com “Sim” e se ainda não foi fechado.
             </p>
           ) : null}
           {events.length === 0 ? (
