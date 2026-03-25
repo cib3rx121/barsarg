@@ -961,7 +961,10 @@ export async function applyEventSettlement(formData: FormData) {
 
     await tx.event.update({
       where: { id: eventId },
-      data: { status: "SETTLED", publicConsultaSummary: true },
+      // Se a migração da coluna ainda não existir na base, esta escrita falha.
+      // Mantemos a liquidação funcional e assumimos o valor por defeito da coluna
+      // (quando existir) para a visibilidade na consulta pública.
+      data: { status: "SETTLED" },
     });
   });
 
@@ -996,10 +999,16 @@ export async function setEventPublicConsultaSummary(formData: FormData) {
     redirect("/admin/convivios?error=4");
   }
 
-  await prisma.event.update({
-    where: { id: eventId },
-    data: { publicConsultaSummary },
-  });
+  try {
+    await prisma.event.update({
+      where: { id: eventId },
+      data: { publicConsultaSummary },
+    });
+  } catch (err) {
+    // Compatibilidade: se a coluna nova ainda não existir na BD, não bloqueamos
+    // o admin do fluxo. Voltamos para o resumo.
+    redirect(`/admin/convivios/${eventId}/resumo`);
+  }
 
   await logAdminEvent({
     action: "UPDATE",

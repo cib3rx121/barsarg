@@ -55,21 +55,59 @@ export default async function ConvivioResumoPage({ params }: PageProps) {
   await requireAdminSession();
   const { eventId } = await params;
 
-  const event = await prisma.event.findUnique({
-    where: { id: eventId },
-    include: {
-      charges: {
-        include: {
-          user: { select: { name: true } },
+  let event: any = null;
+  try {
+    event = await prisma.event.findUnique({
+      where: { id: eventId },
+      include: {
+        charges: {
+          include: {
+            user: { select: { name: true } },
+          },
+        },
+        participants: {
+          include: {
+            user: { select: { name: true } },
+          },
         },
       },
-      participants: {
-        include: {
-          user: { select: { name: true } },
+    });
+  } catch {
+    // Compatibilidade: se a migração da coluna nova ainda não existir na BD,
+    // a query falha. Fazemos fallback sem depender do campo.
+    event = await prisma.event.findUnique({
+      where: { id: eventId },
+      select: {
+        id: true,
+        title: true,
+        status: true,
+        eventDate: true,
+        invoiceUrl: true,
+        foodCents: true,
+        drinkCents: true,
+        otherCents: true,
+        charges: {
+          select: {
+            id: true,
+            userId: true,
+            amountCents: true,
+            user: { select: { name: true } },
+          },
+        },
+        participants: {
+          select: {
+            userId: true,
+            splitProfile: true,
+            user: { select: { name: true } },
+          },
         },
       },
-    },
-  });
+    });
+
+    if (event) {
+      event.publicConsultaSummary = true;
+    }
+  }
 
   if (!event) {
     notFound();
