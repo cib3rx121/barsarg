@@ -78,7 +78,6 @@ export default async function ConvivioResumoPage({ params }: PageProps) {
   await requireAdminSession();
   const { eventId } = await params;
 
-  try {
     // Usamos `select` para não depender de colunas novas na base (caso a migração
     // ainda não esteja aplicada quando o admin carrega o resumo).
     const eventBase = await prisma.event.findUnique({
@@ -329,29 +328,4 @@ export default async function ConvivioResumoPage({ params }: PageProps) {
         </div>
       </div>
     );
-  } catch (err) {
-    const msg = err instanceof Error ? err.message : "Erro desconhecido";
-    return (
-      <div className="relative min-h-screen overflow-x-hidden bg-gradient-to-br from-slate-50 via-emerald-50/35 to-slate-100 pb-20 dark:from-slate-950 dark:via-emerald-950/25 dark:to-slate-900">
-        <div className="relative mx-auto w-full max-w-3xl px-3 py-6 sm:px-6 sm:py-10">
-          <div className={card}>
-            <p className="text-[0.65rem] font-semibold uppercase tracking-[0.28em] text-amber-700 dark:text-amber-300">
-              Erro ao carregar resumo
-            </p>
-            <h1 className="mt-3 text-xl font-semibold text-slate-900 dark:text-white">
-              Não foi possível mostrar o convívio
-            </h1>
-            <p className="mt-3 rounded-lg border border-amber-200 bg-amber-50 px-3 py-2 text-sm text-amber-900 dark:border-amber-900/50 dark:bg-amber-950/35 dark:text-amber-100">
-              {msg}
-            </p>
-            <div className="mt-4">
-              <Link href="/admin/convivios" className={btnSecondary}>
-                Voltar aos convívios
-              </Link>
-            </div>
-          </div>
-        </div>
-      </div>
-    );
-  }
 }
