@@ -37,13 +37,14 @@ const btnSecondary =
   "touch-target inline-flex min-h-12 items-center justify-center rounded-xl border border-slate-200 bg-white px-4 py-2.5 text-sm font-semibold text-slate-800 transition hover:bg-slate-50 dark:border-slate-600 dark:bg-slate-800 dark:text-slate-100 dark:hover:bg-slate-700";
 
 type ConviviosPageProps = {
-  searchParams?: Promise<{ error?: string }>;
+  searchParams?: Promise<{ error?: string; msg?: string }>;
 };
 
 export default async function ConviviosAdminPage({ searchParams }: ConviviosPageProps) {
   await requireAdminSession();
   const params = searchParams ? await searchParams : {};
   const error = params.error ?? "";
+  const detailMsg = params.msg ?? "";
   const currentYear = new Date().getUTCFullYear();
   const createEventError = error === "1";
   const saveCostsError = error === "2";
@@ -52,6 +53,7 @@ export default async function ConviviosAdminPage({ searchParams }: ConviviosPage
   const settlementAlreadyError = error === "41";
   const settlementNoCostsError = error === "42";
   const settlementNoParticipantsError = error === "43";
+  const settlementUnexpectedError = error === "50";
   const reopenError = error === "5";
   const deleteError = error === "6";
   const participantError = error === "7";
@@ -190,6 +192,11 @@ export default async function ConviviosAdminPage({ searchParams }: ConviviosPage
           {settlementNoParticipantsError ? (
             <p className="rounded-lg border border-red-200 bg-red-50 px-3 py-2 text-sm text-red-800 dark:border-red-900/50 dark:bg-red-950/35 dark:text-red-200">
               Não há ninguém com “participa” para dividir. Confirma as inscrições (pelo menos um “Sim”).
+            </p>
+          ) : null}
+          {settlementUnexpectedError ? (
+            <p className="rounded-lg border border-red-200 bg-red-50 px-3 py-2 text-sm text-red-800 dark:border-red-900/50 dark:bg-red-950/35 dark:text-red-200">
+              Erro ao fechar contas do convívio: {detailMsg}
             </p>
           ) : null}
           {events.length === 0 ? (

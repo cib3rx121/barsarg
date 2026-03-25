@@ -898,88 +898,98 @@ export async function updateEventParticipantAdmin(formData: FormData) {
 
 export async function applyEventSettlement(formData: FormData) {
   await assertAdmin();
-  const eventId = String(formData.get("eventId") ?? "").trim();
-  if (!eventId) {
-    redirect("/admin/convivios?error=4");
-  }
-
-  const event = await prisma.event.findUnique({
-    where: { id: eventId },
-    select: {
-      id: true,
-      title: true,
-      status: true,
-      foodCents: true,
-      drinkCents: true,
-      otherCents: true,
-      participants: {
-        select: { userId: true, status: true, splitProfile: true },
-      },
-    },
-  });
-  if (!event) {
-    redirect("/admin/convivios?error=4");
-  }
-  if (event.status === "SETTLED") {
-    redirect("/admin/convivios?error=41");
-  }
-
-  const totalCostsCents = event.foodCents + event.drinkCents + event.otherCents;
-  if (totalCostsCents <= 0) {
-    redirect("/admin/convivios?error=42");
-  }
-
-  const split = computeEventSplit({
-    participants: event.participants,
-    foodCents: event.foodCents,
-    drinkCents: event.drinkCents,
-    otherCents: event.otherCents,
-  });
-  const userIds = [...split.keys()];
-  if (userIds.length === 0) {
-    redirect("/admin/convivios?error=43");
-  }
-
-  await prisma.$transaction(async (tx) => {
-    for (const userId of userIds) {
-      const amountCents = split.get(userId) ?? 0;
-      if (amountCents <= 0) continue;
-
-      await tx.ledgerEntry.create({
-        data: {
-          userId,
-          deltaCents: amountCents,
-          kind: "ADJUSTMENT",
-          monthKey: null,
-          note: `Convívio: ${event.title}`,
-        },
-      });
-      await tx.eventCharge.create({
-        data: { eventId, userId, amountCents },
-      });
+  try {
+    const eventId = String(formData.get("eventId") ?? "").trim();
+    if (!eventId) {
+      redirect("/admin/convivios?error=4");
     }
 
-    await tx.event.update({
+    const event = await prisma.event.findUnique({
       where: { id: eventId },
-      // Se a migração da coluna ainda não existir na base, esta escrita falha.
-      // Mantemos a liquidação funcional e assumimos o valor por defeito da coluna
-      // (quando existir) para a visibilidade na consulta pública.
-      data: { status: "SETTLED" },
+      select: {
+        id: true,
+        title: true,
+        status: true,
+        foodCents: true,
+        drinkCents: true,
+        otherCents: true,
+        participants: {
+          select: { userId: true, status: true, splitProfile: true },
+        },
+      },
     });
-  });
+    if (!event) {
+      redirect("/admin/convivios?error=4");
+    }
+    if (event.status === "SETTLED") {
+      redirect("/admin/convivios?error=41");
+    }
 
-  await logAdminEvent({
-    action: "CREATE",
-    entity: "EVENT_SETTLEMENT",
-    entityId: eventId,
-    note: `Convívio liquidado: ${event.title}`,
-  });
+    const totalCostsCents =
+      event.foodCents + event.drinkCents + event.otherCents;
+    if (totalCostsCents <= 0) {
+      redirect("/admin/convivios?error=42");
+    }
 
-  revalidatePath("/admin/convivios");
-  revalidatePath(`/admin/convivios/${eventId}/resumo`);
-  revalidatePath("/admin");
-  revalidatePath("/consulta");
-  redirect(`/admin/convivios/${eventId}/resumo`);
+    const split = computeEventSplit({
+      participants: event.participants,
+      foodCents: event.foodCents,
+      drinkCents: event.drinkCents,
+      otherCents: event.otherCents,
+    });
+    const userIds = [...split.keys()];
+    if (userIds.length === 0) {
+      redirect("/admin/convivios?error=43");
+    }
+
+    await prisma.$transaction(async (tx) => {
+      for (const userId of userIds) {
+        const amountCents = split.get(userId) ?? 0;
+        if (amountCents <= 0) continue;
+
+        await tx.ledgerEntry.create({
+          data: {
+            userId,
+            deltaCents: amountCents,
+            kind: "ADJUSTMENT",
+            monthKey: null,
+            note: `Convívio: ${event.title}`,
+          },
+        });
+        await tx.eventCharge.create({
+          data: { eventId, userId, amountCents },
+        });
+      }
+
+      await tx.event.update({
+        where: { id: eventId },
+        data: { status: "SETTLED" },
+      });
+    });
+
+    await logAdminEvent({
+      action: "CREATE",
+      entity: "EVENT_SETTLEMENT",
+      entityId: eventId,
+      note: `Convívio liquidado: ${event.title}`,
+    });
+
+    revalidatePath("/admin/convivios");
+    revalidatePath(`/admin/convivios/${eventId}/resumo`);
+    revalidatePath("/admin");
+    revalidatePath("/consulta");
+    redirect(`/admin/convivios/${eventId}/resumo`);
+  } catch (err) {
+    // Re-throw redirects/notFound: eles usam uma exceção interna do Next.
+    const e = err as unknown as { digest?: unknown };
+    const digest = typeof e?.digest === "string" ? e.digest : "";
+    if (digest.includes("NEXT_REDIRECT") || digest.includes("NEXT_NOT_FOUND")) {
+      throw err;
+    }
+
+    const msg = err instanceof Error ? err.message : "Erro desconhecido";
+    redirect(`/admin/convivios?error=50&msg=${encodeURIComponent(msg.slice(0, 220))}`);
+  }
 }
 
 export async function setEventPublicConsultaSummary(formData: FormData) {
