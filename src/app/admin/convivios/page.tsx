@@ -648,7 +648,7 @@ export default async function ConviviosAdminPage({ searchParams }: ConviviosPage
                     </div>
                   </details>
 
-                  <details className="mt-4 rounded-xl border border-slate-200/80 bg-white/80 p-3 md:hidden dark:border-slate-700/80 dark:bg-slate-900/35">
+                  <details className="mt-4 rounded-xl border border-slate-200/80 bg-white/80 p-3 dark:border-slate-700/80 dark:bg-slate-900/35">
                     <summary className="cursor-pointer text-sm font-semibold text-slate-800 dark:text-slate-100">
                       Convidados (sem conta)
                     </summary>
