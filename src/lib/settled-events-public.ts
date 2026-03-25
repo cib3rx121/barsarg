@@ -29,6 +29,7 @@ export async function fetchSettledEventsForPublicConsulta(): Promise<
     otherCents: number;
     charges: Array<{
       id: string;
+      userId: string;
       amountCents: number;
       user: { name: string };
     }>;
