@@ -27,6 +27,29 @@ type PageProps = {
   params: Promise<{ eventId: string }>;
 };
 
+type EventResumoDbRow = {
+  id: string;
+  title: string;
+  status: string;
+  eventDate: Date | null;
+  invoiceUrl: string | null;
+  foodCents: number;
+  drinkCents: number;
+  otherCents: number;
+  publicConsultaSummary?: boolean;
+  charges: Array<{
+    id: string;
+    userId: string;
+    amountCents: number;
+    user: { name: string };
+  }>;
+  participants: Array<{
+    userId: string;
+    splitProfile: string;
+    user: { name: string };
+  }>;
+};
+
 function buildShareText(input: {
   title: string;
   eventDateLabel: string | null;
@@ -55,9 +78,9 @@ export default async function ConvivioResumoPage({ params }: PageProps) {
   await requireAdminSession();
   const { eventId } = await params;
 
-  let event: any = null;
+  let event: EventResumoDbRow | null = null;
   try {
-    event = await prisma.event.findUnique({
+    const found = await prisma.event.findUnique({
       where: { id: eventId },
       include: {
         charges: {
@@ -72,10 +95,11 @@ export default async function ConvivioResumoPage({ params }: PageProps) {
         },
       },
     });
+    event = found as unknown as EventResumoDbRow | null;
   } catch {
     // Compatibilidade: se a migração da coluna nova ainda não existir na BD,
     // a query falha. Fazemos fallback sem depender do campo.
-    event = await prisma.event.findUnique({
+    const found = await prisma.event.findUnique({
       where: { id: eventId },
       select: {
         id: true,
@@ -104,9 +128,11 @@ export default async function ConvivioResumoPage({ params }: PageProps) {
       },
     });
 
-    if (event) {
-      event.publicConsultaSummary = true;
+    if (found) {
+      (found as unknown as EventResumoDbRow).publicConsultaSummary = true;
     }
+
+    event = found as unknown as EventResumoDbRow | null;
   }
 
   if (!event) {

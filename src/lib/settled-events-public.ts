@@ -19,7 +19,26 @@ export type SettledEventPublicRow = {
 export async function fetchSettledEventsForPublicConsulta(): Promise<
   SettledEventPublicRow[]
 > {
-  let events: any[] = [];
+  type DbSettledEventForPublic = {
+    id: string;
+    title: string;
+    eventDate: Date | null;
+    invoiceUrl: string | null;
+    foodCents: number;
+    drinkCents: number;
+    otherCents: number;
+    charges: Array<{
+      id: string;
+      amountCents: number;
+      user: { name: string };
+    }>;
+    participants: Array<{
+      userId: string;
+      splitProfile: string;
+    }>;
+  };
+
+  let events: DbSettledEventForPublic[] = [];
   try {
     events = await prisma.event.findMany({
       where: { status: "SETTLED", publicConsultaSummary: true },
@@ -32,7 +51,7 @@ export async function fetchSettledEventsForPublicConsulta(): Promise<
           select: { userId: true, splitProfile: true },
         },
       },
-    });
+    }) as unknown as DbSettledEventForPublic[];
   } catch {
     // Compatibilidade: se a migração/coluna nova ainda não existir na BD,
     // não bloqueamos a consulta pública.
@@ -47,7 +66,7 @@ export async function fetchSettledEventsForPublicConsulta(): Promise<
           select: { userId: true, splitProfile: true },
         },
       },
-    });
+    }) as unknown as DbSettledEventForPublic[];
   }
 
   return events.map((ev) => {

@@ -1004,7 +1004,7 @@ export async function setEventPublicConsultaSummary(formData: FormData) {
       where: { id: eventId },
       data: { publicConsultaSummary },
     });
-  } catch (err) {
+  } catch {
     // Compatibilidade: se a coluna nova ainda não existir na BD, não bloqueamos
     // o admin do fluxo. Voltamos para o resumo.
     redirect(`/admin/convivios/${eventId}/resumo`);
