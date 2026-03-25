@@ -61,13 +61,30 @@ export default async function ConviviosAdminPage({ searchParams }: ConviviosPage
     prisma.event.count({ where: { status: "SETTLED" } }),
   ]);
 
+  // Nota: evitamos selecionar todas as colunas por defeito.
+  // Isto garante que, se a coluna nova (`publicConsultaSummary`) ainda não existir
+  // na base (migração pendente), a página continua a carregar.
   const events = await prisma.event.findMany({
     orderBy: [{ status: "asc" }, { eventDate: "asc" }, { createdAt: "desc" }],
-    include: {
+    select: {
+      id: true,
+      title: true,
+      status: true,
+      eventDate: true,
+      description: true,
+      invoiceUrl: true,
+      foodCents: true,
+      drinkCents: true,
+      otherCents: true,
       participants: {
-        include: { user: { select: { name: true } } },
+        select: {
+          id: true,
+          userId: true,
+          status: true,
+          splitProfile: true,
+          user: { select: { name: true } },
+        },
       },
-      charges: true,
     },
   });
   return (
@@ -240,12 +257,7 @@ export default async function ConviviosAdminPage({ searchParams }: ConviviosPage
                         Ver resumo para partilhar
                       </Link>
                       <span className="text-xs text-slate-500 dark:text-slate-400">
-                        Consulta pública:{" "}
-                        {event.publicConsultaSummary ? (
-                          <span className="font-medium text-emerald-700 dark:text-emerald-400">visível</span>
-                        ) : (
-                          <span className="font-medium text-slate-600 dark:text-slate-400">oculto</span>
-                        )}
+                        Consulta pública: disponível (PIN)
                       </span>
                     </div>
                   ) : null}
