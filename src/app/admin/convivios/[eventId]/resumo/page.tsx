@@ -78,65 +78,57 @@ export default async function ConvivioResumoPage({ params }: PageProps) {
   await requireAdminSession();
   const { eventId } = await params;
 
-  let event: EventResumoDbRow | null = null;
-  try {
-    const found = await prisma.event.findUnique({
-      where: { id: eventId },
-      include: {
-        charges: {
-          include: {
-            user: { select: { name: true } },
-          },
-        },
-        participants: {
-          include: {
-            user: { select: { name: true } },
-          },
-        },
-      },
-    });
-    event = found as unknown as EventResumoDbRow | null;
-  } catch {
-    // Compatibilidade: se a migração da coluna nova ainda não existir na BD,
-    // a query falha. Fazemos fallback sem depender do campo.
-    const found = await prisma.event.findUnique({
-      where: { id: eventId },
-      select: {
-        id: true,
-        title: true,
-        status: true,
-        eventDate: true,
-        invoiceUrl: true,
-        foodCents: true,
-        drinkCents: true,
-        otherCents: true,
-        charges: {
-          select: {
-            id: true,
-            userId: true,
-            amountCents: true,
-            user: { select: { name: true } },
-          },
-        },
-        participants: {
-          select: {
-            userId: true,
-            splitProfile: true,
-            user: { select: { name: true } },
-          },
+  // Usamos `select` para não depender de colunas novas na base (caso a migração
+  // ainda não esteja aplicada quando o admin carrega o resumo).
+  const eventBase = await prisma.event.findUnique({
+    where: { id: eventId },
+    select: {
+      id: true,
+      title: true,
+      status: true,
+      eventDate: true,
+      invoiceUrl: true,
+      foodCents: true,
+      drinkCents: true,
+      otherCents: true,
+      charges: {
+        select: {
+          id: true,
+          userId: true,
+          amountCents: true,
+          user: { select: { name: true } },
         },
       },
-    });
+      participants: {
+        select: {
+          userId: true,
+          splitProfile: true,
+          user: { select: { name: true } },
+        },
+      },
+    },
+  });
 
-    if (found) {
-      (found as unknown as EventResumoDbRow).publicConsultaSummary = true;
-    }
-
-    event = found as unknown as EventResumoDbRow | null;
+  if (!eventBase) {
+    notFound();
   }
 
-  if (!event) {
-    notFound();
+  // Default: se a coluna nova ainda não existir, mostramos como "visível".
+  const event: EventResumoDbRow = {
+    ...(eventBase as unknown as Omit<EventResumoDbRow, "publicConsultaSummary">),
+    publicConsultaSummary: true,
+  };
+
+  try {
+    const summaryRow = await prisma.event.findUnique({
+      where: { id: eventId },
+      select: { publicConsultaSummary: true },
+    });
+    if (summaryRow) {
+      event.publicConsultaSummary = summaryRow.publicConsultaSummary;
+    }
+  } catch {
+    // Mantém default `true`.
   }
 
   const totalCents = event.foodCents + event.drinkCents + event.otherCents;
