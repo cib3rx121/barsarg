@@ -6,6 +6,12 @@ export type EventParticipantRow = {
   splitProfile: string;
 };
 
+export type SplitParticipantRow = {
+  participantId: string;
+  status: string;
+  splitProfile: string;
+};
+
 /** Aceita "YES", "yes", espaços, etc. — evita split vazio por inconsistência na BD. */
 export function isParticipantYes(status: string): boolean {
   return String(status ?? "").trim().toUpperCase() === "YES";
@@ -37,7 +43,7 @@ function splitCategory(total: number, userIds: string[]): Map<string, number> {
 }
 
 export function computeEventSplit(input: {
-  participants: EventParticipantRow[];
+  participants: SplitParticipantRow[];
   foodCents: number;
   drinkCents: number;
   otherCents: number;
@@ -45,15 +51,19 @@ export function computeEventSplit(input: {
   const active = input.participants
     .filter((p) => isParticipantYes(p.status))
     .map((p) => ({
-      userId: p.userId,
+      participantId: p.participantId,
       profile: normalizeProfile(p.splitProfile),
     }));
 
   const foodUsers = active
     .filter((p) => p.profile === "ALL" || p.profile === "FOOD_ONLY")
-    .map((p) => p.userId);
-  const drinkUsers = active.filter((p) => p.profile === "ALL").map((p) => p.userId);
-  const otherUsers = active.filter((p) => p.profile === "ALL").map((p) => p.userId);
+    .map((p) => p.participantId);
+  const drinkUsers = active
+    .filter((p) => p.profile === "ALL")
+    .map((p) => p.participantId);
+  const otherUsers = active
+    .filter((p) => p.profile === "ALL")
+    .map((p) => p.participantId);
 
   const foodMap = splitCategory(Math.max(0, input.foodCents), foodUsers);
   const drinkMap = splitCategory(Math.max(0, input.drinkCents), drinkUsers);

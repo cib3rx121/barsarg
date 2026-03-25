@@ -107,6 +107,7 @@ model Event {
 
   participants EventParticipant[]
   charges      EventCharge[]
+  guests       EventGuest[]
 
   @@index([status, createdAt])
 }
@@ -124,6 +125,22 @@ model EventParticipant {
   user  User  @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   @@unique([eventId, userId])
+  @@index([eventId, status])
+}
+
+/// Pessoas sem conta na lista de associados (convidados) que também podem
+/// ser incluídas na divisão do convívio.
+model EventGuest {
+  id           String   @id @default(uuid()) @db.Uuid
+  eventId      String   @db.Uuid
+  name         String
+  status       String   @default("YES")
+  splitProfile String   @default("ALL")
+  note         String?
+  createdAt    DateTime @default(now())
+
+  event        Event    @relation(fields: [eventId], references: [id], onDelete: Cascade)
+
   @@index([eventId, status])
 }
 

@@ -151,6 +151,9 @@ export default async function ConsultaPage({ searchParams }: ConsultaPageProps) 
       participants: {
         select: { status: true },
       },
+      guests: {
+        select: { status: true },
+      },
     },
     take: 3,
   });
@@ -204,8 +207,13 @@ export default async function ConsultaPage({ searchParams }: ConsultaPageProps) 
                 const yesCount = ev.participants.filter(
                   (participant) => participant.status === "YES",
                 ).length;
+                const yesGuestsCount = ev.guests.filter(
+                  (g) => g.status === "YES",
+                ).length;
                 const totalCents = ev.foodCents + ev.drinkCents + ev.otherCents;
-                const avgCents = yesCount > 0 ? Math.round(totalCents / yesCount) : 0;
+                const totalYes = yesCount + yesGuestsCount;
+                const avgCents =
+                  totalYes > 0 ? Math.round(totalCents / totalYes) : 0;
                 return (
                   <li key={ev.id}>
                     <p className="font-semibold">
@@ -213,7 +221,8 @@ export default async function ConsultaPage({ searchParams }: ConsultaPageProps) 
                       {ev.eventDate ? ` (${dateFmt.format(ev.eventDate)})` : ""}
                     </p>
                     <p>
-                      Inscritos: {yesCount} · Total: {eurFmt.format(totalCents / 100)}
+                      Inscritos: {yesCount} · Convidados: {yesGuestsCount} · Total:{" "}
+                      {eurFmt.format(totalCents / 100)}
                     </p>
                     <p>
                       Comida: {eurFmt.format(ev.foodCents / 100)} · Bebida:{" "}

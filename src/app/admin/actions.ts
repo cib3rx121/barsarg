@@ -896,6 +896,122 @@ export async function updateEventParticipantAdmin(formData: FormData) {
   redirect("/admin/convivios");
 }
 
+export async function createEventGuestAdmin(formData: FormData) {
+  await assertAdmin();
+  const eventId = String(formData.get("eventId") ?? "").trim();
+  const name = String(formData.get("guestName") ?? "").trim();
+  const status = String(formData.get("status") ?? "").trim();
+  const splitProfile = String(formData.get("splitProfile") ?? "").trim();
+  if (!eventId || !name) {
+    redirect("/admin/convivios?error=8");
+  }
+
+  const event = await prisma.event.findUnique({
+    where: { id: eventId },
+    select: { status: true },
+  });
+  if (!event || event.status === "SETTLED") {
+    redirect("/admin/convivios?error=41");
+  }
+
+  const normalizedStatus = status === "NO" ? "NO" : "YES";
+  const normalizedProfile = splitProfile === "FOOD_ONLY" ? "FOOD_ONLY" : "ALL";
+
+  await prisma.eventGuest.create({
+    data: {
+      eventId,
+      name,
+      status: normalizedStatus,
+      splitProfile: normalizedProfile,
+    },
+  });
+
+  await logAdminEvent({
+    action: "CREATE",
+    entity: "EVENT_GUEST",
+    entityId: eventId,
+    note: `Convidado adicionado: ${name}`,
+  });
+
+  revalidatePath("/admin/convivios");
+  revalidatePath("/consulta");
+  redirect("/admin/convivios");
+}
+
+export async function updateEventGuestAdmin(formData: FormData) {
+  await assertAdmin();
+  const guestId = String(formData.get("guestId") ?? "").trim();
+  const eventId = String(formData.get("eventId") ?? "").trim();
+  const name = String(formData.get("guestName") ?? "").trim();
+  const status = String(formData.get("status") ?? "").trim();
+  const splitProfile = String(formData.get("splitProfile") ?? "").trim();
+  if (!guestId || !eventId || !name) {
+    redirect("/admin/convivios?error=8");
+  }
+
+  const event = await prisma.event.findUnique({
+    where: { id: eventId },
+    select: { status: true },
+  });
+  if (!event || event.status === "SETTLED") {
+    redirect("/admin/convivios?error=41");
+  }
+
+  const normalizedStatus = status === "NO" ? "NO" : "YES";
+  const normalizedProfile = splitProfile === "FOOD_ONLY" ? "FOOD_ONLY" : "ALL";
+
+  await prisma.eventGuest.update({
+    where: { id: guestId },
+    data: {
+      name,
+      status: normalizedStatus,
+      splitProfile: normalizedProfile,
+    },
+  });
+
+  await logAdminEvent({
+    action: "UPDATE",
+    entity: "EVENT_GUEST",
+    entityId: eventId,
+    note: `Convidado atualizado: ${name}`,
+  });
+
+  revalidatePath("/admin/convivios");
+  revalidatePath("/consulta");
+  redirect("/admin/convivios");
+}
+
+export async function deleteEventGuestAdmin(formData: FormData) {
+  await assertAdmin();
+  const guestId = String(formData.get("guestId") ?? "").trim();
+  const eventId = String(formData.get("eventId") ?? "").trim();
+  const confirm = String(formData.get("deleteConfirm") ?? "").trim();
+  if (!guestId || !eventId || confirm !== "APAGAR") {
+    redirect("/admin/convivios?error=9");
+  }
+
+  const event = await prisma.event.findUnique({
+    where: { id: eventId },
+    select: { status: true },
+  });
+  if (!event || event.status === "SETTLED") {
+    redirect("/admin/convivios?error=41");
+  }
+
+  await prisma.eventGuest.delete({ where: { id: guestId } });
+
+  await logAdminEvent({
+    action: "DELETE",
+    entity: "EVENT_GUEST",
+    entityId: eventId,
+    note: `Convidado removido`,
+  });
+
+  revalidatePath("/admin/convivios");
+  revalidatePath("/consulta");
+  redirect("/admin/convivios");
+}
+
 export async function applyEventSettlement(formData: FormData) {
   await assertAdmin();
   try {
@@ -916,6 +1032,9 @@ export async function applyEventSettlement(formData: FormData) {
         participants: {
           select: { userId: true, status: true, splitProfile: true },
         },
+        guests: {
+          select: { id: true, status: true, splitProfile: true },
+        },
       },
     });
     if (!event) {
@@ -932,50 +1051,65 @@ export async function applyEventSettlement(formData: FormData) {
     }
 
     const split = computeEventSplit({
-      participants: event.participants,
+      participants: [
+        ...event.participants.map((p) => ({
+          participantId: p.userId,
+          status: p.status,
+          splitProfile: p.splitProfile,
+        })),
+        ...event.guests.map((g) => ({
+          participantId: g.id,
+          status: g.status,
+          splitProfile: g.splitProfile,
+        })),
+      ],
       foodCents: event.foodCents,
       drinkCents: event.drinkCents,
       otherCents: event.otherCents,
     });
-    const userIds = [...split.keys()];
-    if (userIds.length === 0) {
+    const activeParticipantIds = [...split.keys()];
+    if (activeParticipantIds.length === 0) {
       redirect("/admin/convivios?error=43");
     }
+    const associateUserIds = [...new Set(event.participants.map((p) => p.userId))];
+    const associateUserIdSet = new Set(associateUserIds);
 
     await prisma.$transaction(async (tx) => {
-    // Se o admin já tentou “fechar contas” antes e falhou a meio,
-    // podem já existir `EventCharge` para (eventId,userId) — nesse caso,
-    // recriar sem limpeza dá erro de unique constraint.
-    // Para tornar o “fechar contas” repetível, removemos primeiro charges e
-    // os lançamentos de ledger associados a este convívio.
-    await tx.eventCharge.deleteMany({ where: { eventId } });
+      // Se o admin já tentou “fechar contas” antes e falhou a meio,
+      // podem já existir `EventCharge` para (eventId,userId) — nesse caso,
+      // recriar sem limpeza dá erro de unique constraint.
+      // Para tornar o “fechar contas” repetível, removemos primeiro charges e
+      // os lançamentos de ledger associados a este convívio.
+      await tx.eventCharge.deleteMany({ where: { eventId } });
 
-    const oldLedgerNote = `Convívio: ${event.title}`;
-    const newLedgerNote = `Convívio: ${event.title} (${eventId})`;
-    await tx.ledgerEntry.deleteMany({
-      where: {
-        kind: "ADJUSTMENT",
-        monthKey: null,
-        userId: { in: userIds },
-        note: { in: [oldLedgerNote, newLedgerNote] },
-      },
-    });
+      const oldLedgerNote = `Convívio: ${event.title}`;
+      const newLedgerNote = `Convívio: ${event.title} (${eventId})`;
+      if (associateUserIds.length > 0) {
+        await tx.ledgerEntry.deleteMany({
+          where: {
+            kind: "ADJUSTMENT",
+            monthKey: null,
+            userId: { in: associateUserIds },
+            note: { in: [oldLedgerNote, newLedgerNote] },
+          },
+        });
+      }
 
-      for (const userId of userIds) {
-        const amountCents = split.get(userId) ?? 0;
+      for (const [participantId, amountCents] of split.entries()) {
         if (amountCents <= 0) continue;
+        if (!associateUserIdSet.has(participantId)) continue;
 
         await tx.ledgerEntry.create({
           data: {
-            userId,
+            userId: participantId,
             deltaCents: amountCents,
             kind: "ADJUSTMENT",
             monthKey: null,
-          note: newLedgerNote,
+            note: newLedgerNote,
           },
         });
         await tx.eventCharge.create({
-          data: { eventId, userId, amountCents },
+          data: { eventId, userId: participantId, amountCents },
         });
       }
 

@@ -88,6 +88,9 @@ export default async function ConsultaUserDetailPage({ params }: PageProps) {
       participants: {
         select: { userId: true, status: true, splitProfile: true },
       },
+      guests: {
+        select: { id: true, status: true, splitProfile: true },
+      },
     },
     take: 10,
   });
@@ -154,10 +157,26 @@ export default async function ConsultaUserDetailPage({ params }: PageProps) {
                 const yesCount = ev.participants.filter(
                   (participant) => participant.status === "YES",
                 ).length;
+                const yesGuestsCount = ev.guests.filter(
+                  (g) => g.status === "YES",
+                ).length;
                 const totalCents = ev.foodCents + ev.drinkCents + ev.otherCents;
-                const avgCents = yesCount > 0 ? Math.round(totalCents / yesCount) : 0;
+                const totalYes = yesCount + yesGuestsCount;
+                const avgCents =
+                  totalYes > 0 ? Math.round(totalCents / totalYes) : 0;
                 const splitMap = computeEventSplit({
-                  participants: ev.participants,
+                  participants: [
+                    ...ev.participants.map((p) => ({
+                      participantId: p.userId,
+                      status: p.status,
+                      splitProfile: p.splitProfile,
+                    })),
+                    ...ev.guests.map((g) => ({
+                      participantId: g.id,
+                      status: g.status,
+                      splitProfile: g.splitProfile,
+                    })),
+                  ],
                   foodCents: ev.foodCents,
                   drinkCents: ev.drinkCents,
                   otherCents: ev.otherCents,
@@ -182,7 +201,8 @@ export default async function ConsultaUserDetailPage({ params }: PageProps) {
                     ) : null}
                     <div className="mt-2 rounded-lg border border-slate-200/80 bg-slate-50/80 px-3 py-2 text-xs text-slate-600 dark:border-slate-700/80 dark:bg-slate-800/40 dark:text-slate-300">
                       <p>
-                        Inscritos: {yesCount} · Total: {eurFmt.format(totalCents / 100)}
+                        Inscritos: {yesCount} · Convidados: {yesGuestsCount} · Total:{" "}
+                        {eurFmt.format(totalCents / 100)}
                       </p>
                       <p>
                         Comida: {eurFmt.format(ev.foodCents / 100)} · Bebida:{" "}

@@ -3,7 +3,7 @@ import { notFound } from "next/navigation";
 import { setEventPublicConsultaSummary } from "@/app/admin/actions";
 import { CopyTextButton } from "@/components/CopyTextButton";
 import { requireAdminSession } from "@/lib/auth-admin";
-import { splitProfileLabel } from "@/lib/events";
+import { computeEventSplit, isParticipantYes, splitProfileLabel } from "@/lib/events";
 import { prisma } from "@/lib/prisma";
 
 const eurFmt = new Intl.NumberFormat("pt-PT", {
@@ -37,16 +37,17 @@ type EventResumoDbRow = {
   drinkCents: number;
   otherCents: number;
   publicConsultaSummary?: boolean;
-  charges: Array<{
-    id: string;
-    userId: string;
-    amountCents: number;
-    user: { name: string };
-  }>;
   participants: Array<{
     userId: string;
+    status: string;
     splitProfile: string;
     user: { name: string };
+  }>;
+  guests: Array<{
+    id: string;
+    name: string;
+    status: string;
+    splitProfile: string;
   }>;
 };
 
@@ -66,7 +67,7 @@ function buildShareText(input: {
     input.consultaLine,
   ].filter(Boolean);
   const header = headerParts.join("\n");
-  const intro = "Valor por participante (lançado no saldo):";
+  const intro = "Valor por participante:";
   const body = input.lines
     .map((row) => `- ${row.name}: ${row.amount} (${row.profile})`)
     .join("\n");
@@ -96,19 +97,20 @@ export default async function ConvivioResumoPage({ params }: PageProps) {
         foodCents: true,
         drinkCents: true,
         otherCents: true,
-        charges: {
-          select: {
-            id: true,
-            userId: true,
-            amountCents: true,
-            user: { select: { name: true } },
-          },
-        },
         participants: {
           select: {
             userId: true,
+            status: true,
             splitProfile: true,
             user: { select: { name: true } },
+          },
+        },
+        guests: {
+          select: {
+            id: true,
+            name: true,
+            status: true,
+            splitProfile: true,
           },
         },
       },
@@ -169,19 +171,42 @@ export default async function ConvivioResumoPage({ params }: PageProps) {
   const consultaLine =
     baseUrl.length > 0 ? `Consulta pública (saldo): ${baseUrl}/consulta` : null;
 
-  const chargesSorted = [...event.charges].sort((a, b) =>
-    a.user.name.localeCompare(b.user.name, "pt"),
-  );
-
-  const rows = chargesSorted.map((c) => {
-    const part = event.participants.find((p) => p.userId === c.userId);
-    return {
-      id: c.id,
-      name: c.user.name,
-      amountCents: c.amountCents,
-      profile: part ? splitProfileLabel(part.splitProfile) : "—",
-    };
+  const splitMap = computeEventSplit({
+    participants: [
+      ...event.participants.map((p) => ({
+        participantId: p.userId,
+        status: p.status,
+        splitProfile: p.splitProfile,
+      })),
+      ...event.guests.map((g) => ({
+        participantId: g.id,
+        status: g.status,
+        splitProfile: g.splitProfile,
+      })),
+    ],
+    foodCents: event.foodCents,
+    drinkCents: event.drinkCents,
+    otherCents: event.otherCents,
   });
+
+  const rows = [
+    ...event.participants
+      .filter((p) => isParticipantYes(p.status))
+      .map((p) => ({
+        id: `u-${p.userId}`,
+        name: p.user.name,
+        amountCents: splitMap.get(p.userId) ?? 0,
+        profile: splitProfileLabel(p.splitProfile),
+      })),
+    ...event.guests
+      .filter((g) => isParticipantYes(g.status))
+      .map((g) => ({
+        id: `g-${g.id}`,
+        name: g.name,
+        amountCents: splitMap.get(g.id) ?? 0,
+        profile: splitProfileLabel(g.splitProfile),
+      })),
+  ].sort((a, b) => a.name.localeCompare(b.name, "pt"));
 
   const eventDateLabel = event.eventDate ? dateFmt.format(event.eventDate) : null;
 

@@ -1,9 +1,12 @@
 import Link from "next/link";
 import {
   applyEventSettlement,
+  createEventGuestAdmin,
+  deleteEventGuestAdmin,
   closeEventRegistrations,
   createEvent,
   deleteEvent,
+  updateEventGuestAdmin,
   reopenEventRegistrations,
   saveEventCosts,
   updateEventParticipantAdmin,
@@ -85,6 +88,14 @@ export default async function ConviviosAdminPage({ searchParams }: ConviviosPage
           status: true,
           splitProfile: true,
           user: { select: { name: true } },
+        },
+      },
+      guests: {
+        select: {
+          id: true,
+          name: true,
+          status: true,
+          splitProfile: true,
         },
       },
     },
@@ -208,12 +219,23 @@ export default async function ConviviosAdminPage({ searchParams }: ConviviosPage
               const yesCount = event.participants.filter((p) =>
                 isParticipantYes(p.status),
               ).length;
+              const yesGuestsCount = event.guests.filter((g) =>
+                isParticipantYes(g.status),
+              ).length;
+              const totalYes = yesCount + yesGuestsCount;
               const split = computeEventSplit({
-                participants: event.participants.map((p) => ({
-                  userId: p.userId,
-                  status: p.status,
-                  splitProfile: p.splitProfile,
-                })),
+                participants: [
+                  ...event.participants.map((p) => ({
+                    participantId: p.userId,
+                    status: p.status,
+                    splitProfile: p.splitProfile,
+                  })),
+                  ...event.guests.map((g) => ({
+                    participantId: g.id,
+                    status: g.status,
+                    splitProfile: g.splitProfile,
+                  })),
+                ],
                 foodCents: event.foodCents,
                 drinkCents: event.drinkCents,
                 otherCents: event.otherCents,
@@ -240,7 +262,8 @@ export default async function ConviviosAdminPage({ searchParams }: ConviviosPage
                     </div>
                     <div className="rounded-xl border border-slate-200/80 bg-slate-50/80 px-3 py-2 text-xs text-slate-600 dark:border-slate-700/80 dark:bg-slate-800/40 dark:text-slate-300">
                       <p>
-                        <span className="font-semibold">Inscritos:</span> {yesCount}
+                        <span className="font-semibold">Inscritos:</span> {yesCount}{" "}
+                        <span className="ml-2 font-semibold">Convidados:</span> {yesGuestsCount}
                       </p>
                       <p>
                         <span className="font-semibold">Total:</span>{" "}
@@ -248,8 +271,8 @@ export default async function ConviviosAdminPage({ searchParams }: ConviviosPage
                       </p>
                       <p>
                         <span className="font-semibold">Médio:</span>{" "}
-                        {yesCount > 0
-                          ? eurFmt.format((event.foodCents + event.drinkCents + event.otherCents) / yesCount / 100)
+                        {totalYes > 0
+                          ? eurFmt.format((event.foodCents + event.drinkCents + event.otherCents) / totalYes / 100)
                           : "—"}
                       </p>
                     </div>
@@ -485,10 +508,10 @@ export default async function ConviviosAdminPage({ searchParams }: ConviviosPage
                   <div className="mt-3 grid gap-3 rounded-xl border border-slate-200/80 bg-slate-50/60 p-3 sm:grid-cols-3 dark:border-slate-700/80 dark:bg-slate-800/35">
                     <div>
                       <p className="text-xs uppercase tracking-wide text-slate-500 dark:text-slate-400">
-                        Inscritos (YES)
+                        Participa (YES)
                       </p>
                       <p className="text-lg font-semibold text-slate-900 dark:text-slate-100">
-                        {yesCount}
+                        {totalYes}
                       </p>
                     </div>
                     <div>
@@ -504,9 +527,9 @@ export default async function ConviviosAdminPage({ searchParams }: ConviviosPage
                         Valor médio / inscrito
                       </p>
                       <p className="text-lg font-semibold text-slate-900 dark:text-slate-100">
-                        {yesCount > 0
+                        {totalYes > 0
                           ? eurFmt.format(
-                              (event.foodCents + event.drinkCents + event.otherCents) / yesCount / 100,
+                              (event.foodCents + event.drinkCents + event.otherCents) / totalYes / 100,
                             )
                           : "—"}
                       </p>
@@ -605,7 +628,133 @@ export default async function ConviviosAdminPage({ searchParams }: ConviviosPage
                           </p>
                         </div>
                       ))}
+                      {event.guests.length > 0
+                        ? event.guests.map((g) => (
+                            <div
+                              key={g.id}
+                              className="rounded-lg border border-slate-200/80 p-2 dark:border-slate-700/80"
+                            >
+                              <p className="text-sm font-medium text-slate-900 dark:text-slate-100">
+                                {g.name}
+                              </p>
+                              <p className="text-xs text-slate-500 dark:text-slate-400">
+                                {g.status === "YES" ? "Participa" : "Não participa"} ·{" "}
+                                {splitProfileLabel(g.splitProfile)} ·{" "}
+                                {eurFmt.format((split.get(g.id) ?? 0) / 100)}
+                              </p>
+                            </div>
+                          ))
+                        : null}
                     </div>
+                  </details>
+
+                  <details className="mt-4 rounded-xl border border-slate-200/80 bg-white/80 p-3 md:hidden dark:border-slate-700/80 dark:bg-slate-900/35">
+                    <summary className="cursor-pointer text-sm font-semibold text-slate-800 dark:text-slate-100">
+                      Convidados (sem conta)
+                    </summary>
+                    {event.status === "SETTLED" ? (
+                      <p className="mt-2 text-xs text-amber-700 dark:text-amber-300">
+                        As contas já estão fechadas. Não é possível alterar convidados.
+                      </p>
+                    ) : (
+                      <>
+                        <form action={createEventGuestAdmin} className="mt-3 grid gap-3">
+                          <input type="hidden" name="eventId" value={event.id} />
+                          <input
+                            name="guestName"
+                            required
+                            placeholder="Nome do convidado (ex.: Convidado 1)"
+                            className={inpt}
+                          />
+                          <div className="grid gap-2 sm:grid-cols-2">
+                            <select
+                              name="status"
+                              defaultValue="YES"
+                              className="rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm dark:border-slate-600 dark:bg-slate-950/40"
+                            >
+                              <option value="YES">Participa</option>
+                              <option value="NO">Não participa</option>
+                            </select>
+                            <select
+                              name="splitProfile"
+                              defaultValue="ALL"
+                              className="rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm dark:border-slate-600 dark:bg-slate-950/40"
+                            >
+                              <option value="ALL">Tudo</option>
+                              <option value="FOOD_ONLY">Só comida</option>
+                            </select>
+                          </div>
+                          <button type="submit" className={`${btnSecondary} w-full`}>
+                            Adicionar convidado
+                          </button>
+                        </form>
+
+                        {event.guests.length > 0 ? (
+                          <div className="mt-4 space-y-3">
+                            {event.guests.map((g) => (
+                              <div
+                                key={g.id}
+                                className="rounded-lg border border-slate-200/80 p-2 dark:border-slate-700/80"
+                              >
+                                <p className="text-xs font-semibold uppercase tracking-wide text-slate-500 dark:text-slate-400">
+                                  Valor previsto:{" "}
+                                  {eurFmt.format((split.get(g.id) ?? 0) / 100)}
+                                </p>
+                                <form action={updateEventGuestAdmin} className="mt-2 grid gap-2">
+                                  <input type="hidden" name="eventId" value={event.id} />
+                                  <input type="hidden" name="guestId" value={g.id} />
+                                  <input
+                                    name="guestName"
+                                    defaultValue={g.name}
+                                    required
+                                    className={inpt}
+                                  />
+                                  <div className="grid gap-2 sm:grid-cols-2">
+                                    <select
+                                      name="status"
+                                      defaultValue={g.status}
+                                      className="rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm dark:border-slate-600 dark:bg-slate-950/40"
+                                    >
+                                      <option value="YES">Participa</option>
+                                      <option value="NO">Não participa</option>
+                                    </select>
+                                    <select
+                                      name="splitProfile"
+                                      defaultValue={g.splitProfile}
+                                      className="rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm dark:border-slate-600 dark:bg-slate-950/40"
+                                    >
+                                      <option value="ALL">Tudo</option>
+                                      <option value="FOOD_ONLY">Só comida</option>
+                                    </select>
+                                  </div>
+                                  <button type="submit" className={btnSecondary}>
+                                    Guardar convidado
+                                  </button>
+                                </form>
+                                <form
+                                  action={deleteEventGuestAdmin}
+                                  className="mt-2 grid gap-2 sm:grid-cols-[1fr_auto]"
+                                >
+                                  <input type="hidden" name="eventId" value={event.id} />
+                                  <input type="hidden" name="guestId" value={g.id} />
+                                  <input
+                                    name="deleteConfirm"
+                                    placeholder="APAGAR"
+                                    className="rounded-lg border border-red-300 bg-white px-3 py-2 text-sm dark:border-red-900/50 dark:bg-slate-900/50"
+                                  />
+                                  <button
+                                    type="submit"
+                                    className="rounded-lg border border-red-300 bg-red-100 px-4 py-2 text-sm font-semibold text-red-800 hover:bg-red-200 dark:border-red-900/50 dark:bg-red-950/40 dark:text-red-200 dark:hover:bg-red-900/50"
+                                  >
+                                    Remover
+                                  </button>
+                                </form>
+                              </div>
+                            ))}
+                          </div>
+                        ) : null}
+                      </>
+                    )}
                   </details>
                 </article>
               );
