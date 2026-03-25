@@ -78,9 +78,14 @@ export default async function ConvivioResumoPage({ params }: PageProps) {
   await requireAdminSession();
   const { eventId } = await params;
 
-    // Usamos `select` para não depender de colunas novas na base (caso a migração
-    // ainda não esteja aplicada quando o admin carrega o resumo).
-    const eventBase = await prisma.event.findUnique({
+  type EventResumoDbBase = Omit<EventResumoDbRow, "publicConsultaSummary">;
+
+  // Usamos `select` para não depender de colunas novas na base (caso a migração
+  // ainda não esteja aplicada quando o admin carrega o resumo).
+  let eventBase: EventResumoDbBase | null = null;
+  let fetchErrorMsg: string | null = null;
+  try {
+    eventBase = await prisma.event.findUnique({
       where: { id: eventId },
       select: {
         id: true,
@@ -108,70 +113,96 @@ export default async function ConvivioResumoPage({ params }: PageProps) {
         },
       },
     });
+  } catch (err) {
+    fetchErrorMsg = err instanceof Error ? err.message : "Erro desconhecido";
+  }
 
-    if (!eventBase) {
-      notFound();
-    }
-
-    // Default: se a coluna nova ainda não existir, mostramos como "visível".
-    const event: EventResumoDbRow = {
-      ...(eventBase as unknown as Omit<EventResumoDbRow, "publicConsultaSummary">),
-      publicConsultaSummary: true,
-    };
-
-    try {
-      const summaryRow = await prisma.event.findUnique({
-        where: { id: eventId },
-        select: { publicConsultaSummary: true },
-      });
-      if (summaryRow) {
-        event.publicConsultaSummary = summaryRow.publicConsultaSummary;
-      }
-    } catch {
-      // Mantém default `true`.
-    }
-
-    const totalCents = event.foodCents + event.drinkCents + event.otherCents;
-    const baseUrl = (process.env.NEXT_PUBLIC_APP_URL ?? "").replace(/\/$/, "");
-    const consultaLine =
-      baseUrl.length > 0 ? `Consulta pública (saldo): ${baseUrl}/consulta` : null;
-
-    const chargesSorted = [...event.charges].sort((a, b) =>
-      a.user.name.localeCompare(b.user.name, "pt"),
-    );
-
-    const rows = chargesSorted.map((c) => {
-      const part = event.participants.find((p) => p.userId === c.userId);
-      return {
-        id: c.id,
-        name: c.user.name,
-        amountCents: c.amountCents,
-        profile: part ? splitProfileLabel(part.splitProfile) : "—",
-      };
-    });
-
-    const eventDateLabel = event.eventDate ? dateFmt.format(event.eventDate) : null;
-
-    const invoiceLine = event.invoiceUrl
-      ? `Comprovativo / fatura: ${event.invoiceUrl}`
-      : null;
-
-    const shareText = buildShareText({
-      title: event.title,
-      eventDateLabel,
-      totalLabel: eurFmt.format(totalCents / 100),
-      invoiceLine,
-      consultaLine,
-      lines: rows.map((r) => ({
-        name: r.name,
-        amount: eurFmt.format(r.amountCents / 100),
-        profile: r.profile,
-      })),
-    });
-
-    const isSettled = event.status === "SETTLED";
-
+  if (fetchErrorMsg) {
     return (
+      <div className="relative min-h-screen overflow-x-hidden bg-gradient-to-br from-slate-50 via-emerald-50/35 to-slate-100 pb-20 dark:from-slate-950 dark:via-emerald-950/25 dark:to-slate-900">
+        <div className="relative mx-auto w-full max-w-3xl px-3 py-6 sm:px-6 sm:py-10">
+          <div className={card}>
+            <p className="text-[0.65rem] font-semibold uppercase tracking-[0.28em] text-amber-700 dark:text-amber-300">
+              Erro ao carregar resumo
+            </p>
+            <h1 className="mt-3 text-xl font-semibold text-slate-900 dark:text-white">
+              Não foi possível mostrar o convívio
+            </h1>
+            <p className="mt-3 rounded-lg border border-amber-200 bg-amber-50 px-3 py-2 text-sm text-amber-900 dark:border-amber-900/50 dark:bg-amber-950/35 dark:text-amber-100">
+              {fetchErrorMsg}
+            </p>
+            <div className="mt-4">
+              <Link href="/admin/convivios" className={btnSecondary}>
+                Voltar aos convívios
+              </Link>
+            </div>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  if (!eventBase) {
+    notFound();
+  }
+
+  // Default: se a coluna nova ainda não existir, mostramos como "visível".
+  const event: EventResumoDbRow = {
+    ...(eventBase as unknown as Omit<EventResumoDbRow, "publicConsultaSummary">),
+    publicConsultaSummary: true,
+  };
+
+  try {
+    const summaryRow = await prisma.event.findUnique({
+      where: { id: eventId },
+      select: { publicConsultaSummary: true },
+    });
+    if (summaryRow) {
+      event.publicConsultaSummary = summaryRow.publicConsultaSummary;
+    }
+  } catch {
+    // Mantém default `true`.
+  }
+
+  const totalCents = event.foodCents + event.drinkCents + event.otherCents;
+  const baseUrl = (process.env.NEXT_PUBLIC_APP_URL ?? "").replace(/\/$/, "");
+  const consultaLine =
+    baseUrl.length > 0 ? `Consulta pública (saldo): ${baseUrl}/consulta` : null;
+
+  const chargesSorted = [...event.charges].sort((a, b) =>
+    a.user.name.localeCompare(b.user.name, "pt"),
+  );
+
+  const rows = chargesSorted.map((c) => {
+    const part = event.participants.find((p) => p.userId === c.userId);
+    return {
+      id: c.id,
+      name: c.user.name,
+      amountCents: c.amountCents,
+      profile: part ? splitProfileLabel(part.splitProfile) : "—",
+    };
+  });
+
+  const eventDateLabel = event.eventDate ? dateFmt.format(event.eventDate) : null;
+
+  const invoiceLine = event.invoiceUrl ? `Comprovativo / fatura: ${event.invoiceUrl}` : null;
+
+  const shareText = buildShareText({
+    title: event.title,
+    eventDateLabel,
+    totalLabel: eurFmt.format(totalCents / 100),
+    invoiceLine,
+    consultaLine,
+    lines: rows.map((r) => ({
+      name: r.name,
+      amount: eurFmt.format(r.amountCents / 100),
+      profile: r.profile,
+    })),
+  });
+
+  const isSettled = event.status === "SETTLED";
+
+  return (
       <div className="relative min-h-screen overflow-x-hidden bg-gradient-to-br from-slate-50 via-emerald-50/35 to-slate-100 pb-20 dark:from-slate-950 dark:via-emerald-950/25 dark:to-slate-900">
         <div className="relative mx-auto w-full max-w-3xl px-3 py-6 sm:px-6 sm:py-10">
           <header className={card}>
@@ -327,5 +358,5 @@ export default async function ConvivioResumoPage({ params }: PageProps) {
           ) : null}
         </div>
       </div>
-    );
+  );
 }
