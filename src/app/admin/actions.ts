@@ -943,6 +943,24 @@ export async function applyEventSettlement(formData: FormData) {
     }
 
     await prisma.$transaction(async (tx) => {
+    // Se o admin já tentou “fechar contas” antes e falhou a meio,
+    // podem já existir `EventCharge` para (eventId,userId) — nesse caso,
+    // recriar sem limpeza dá erro de unique constraint.
+    // Para tornar o “fechar contas” repetível, removemos primeiro charges e
+    // os lançamentos de ledger associados a este convívio.
+    await tx.eventCharge.deleteMany({ where: { eventId } });
+
+    const oldLedgerNote = `Convívio: ${event.title}`;
+    const newLedgerNote = `Convívio: ${event.title} (${eventId})`;
+    await tx.ledgerEntry.deleteMany({
+      where: {
+        kind: "ADJUSTMENT",
+        monthKey: null,
+        userId: { in: userIds },
+        note: { in: [oldLedgerNote, newLedgerNote] },
+      },
+    });
+
       for (const userId of userIds) {
         const amountCents = split.get(userId) ?? 0;
         if (amountCents <= 0) continue;
@@ -953,7 +971,7 @@ export async function applyEventSettlement(formData: FormData) {
             deltaCents: amountCents,
             kind: "ADJUSTMENT",
             monthKey: null,
-            note: `Convívio: ${event.title}`,
+          note: newLedgerNote,
           },
         });
         await tx.eventCharge.create({
